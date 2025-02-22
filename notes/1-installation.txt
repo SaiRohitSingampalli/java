@@ -1,0 +1,3 @@
+Install jdk-16
+java -version
+jshell -version

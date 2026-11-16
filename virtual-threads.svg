@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 495" width="900" height="495" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0969da"/></marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="495" fill="#ffffff"/>
+  <text x="450" y="28" text-anchor="middle" font-size="18" font-weight="700" fill="#24292f">Virtual threads: many cheap threads, multiplexed onto a few carriers</text>
+
+  <!-- virtual threads -->
+  <rect x="30" y="44" width="540" height="112" rx="12" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="46" y="64" font-size="13" font-weight="700" fill="#24292f">Virtual threads: one per task, created freely (thousands to millions)</text>
+  <g font-size="11" text-anchor="middle">
+    <rect x="46" y="76" width="54" height="28" rx="6" fill="#dafbe1" stroke="#1a7f37"/><text x="73" y="94" fill="#24292f">VT 1</text>
+    <rect x="108" y="76" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="135" y="94" fill="#24292f">VT 2</text>
+    <rect x="170" y="76" width="54" height="28" rx="6" fill="#dafbe1" stroke="#1a7f37"/><text x="197" y="94" fill="#24292f">VT 3</text>
+    <rect x="232" y="76" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="259" y="94" fill="#24292f">VT 4</text>
+    <rect x="294" y="76" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="321" y="94" fill="#24292f">VT 5</text>
+    <rect x="356" y="76" width="54" height="28" rx="6" fill="#dafbe1" stroke="#1a7f37"/><text x="383" y="94" fill="#24292f">VT 6</text>
+    <rect x="418" y="76" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="445" y="94" fill="#24292f">VT 7</text>
+    <rect x="480" y="76" width="54" height="28" rx="6" fill="#ffebe9" stroke="#cf222e"/><text x="507" y="94" fill="#24292f">VT 8</text>
+    <rect x="46" y="114" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="73" y="132" fill="#24292f">VT 9</text>
+    <rect x="108" y="114" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="135" y="132" fill="#24292f">VT 10</text>
+    <rect x="170" y="114" width="54" height="28" rx="6" fill="#f6f8fa" stroke="#8c959f"/><text x="197" y="132" fill="#57606a">ready</text>
+    <rect x="232" y="114" width="54" height="28" rx="6" fill="#ddf4ff" stroke="#0969da"/><text x="259" y="132" fill="#24292f">VT 12</text>
+    <text x="400" y="133" font-size="13" fill="#57606a">… 100,000 more</text>
+  </g>
+
+  <!-- carriers -->
+  <rect x="30" y="196" width="540" height="120" rx="12" fill="#fbefff" stroke="#8250df" stroke-width="1.6"/>
+  <text x="46" y="302" font-size="13" font-weight="700" fill="#8250df">Carrier threads: a ForkJoinPool, parallelism ≈ CPU cores</text>
+  <g font-size="12" text-anchor="middle">
+    <rect x="46" y="206" width="118" height="62" rx="8" fill="#ffffff" stroke="#8250df"/>
+    <text x="105" y="230" font-weight="700" fill="#24292f">carrier-1</text><text x="105" y="250" fill="#1a7f37">running VT 1</text>
+    <rect x="176" y="206" width="118" height="62" rx="8" fill="#ffffff" stroke="#8250df"/>
+    <text x="235" y="230" font-weight="700" fill="#24292f">carrier-2</text><text x="235" y="250" fill="#1a7f37">running VT 3</text>
+    <rect x="306" y="206" width="118" height="62" rx="8" fill="#ffffff" stroke="#8250df"/>
+    <text x="365" y="230" font-weight="700" fill="#24292f">carrier-3</text><text x="365" y="250" fill="#1a7f37">running VT 6</text>
+    <rect x="436" y="206" width="118" height="62" rx="8" fill="#ffebe9" stroke="#cf222e"/>
+    <text x="495" y="230" font-weight="700" fill="#24292f">carrier-4</text><text x="495" y="250" fill="#cf222e">PINNED by VT 8</text>
+  </g>
+  <g stroke-width="1.6">
+    <line x1="73" y1="104" x2="100" y2="203" stroke="#1a7f37" marker-end="url(#g)"/>
+    <line x1="197" y1="104" x2="230" y2="203" stroke="#1a7f37" marker-end="url(#g)"/>
+    <line x1="383" y1="104" x2="368" y2="203" stroke="#1a7f37" marker-end="url(#g)"/>
+    <line x1="507" y1="104" x2="497" y2="203" stroke="#cf222e" marker-end="url(#g)"/>
+  </g>
+  <text x="130" y="184" font-size="12" fill="#1a7f37">mount (run on a carrier)</text>
+
+  <!-- heap -->
+  <rect x="590" y="44" width="280" height="272" rx="12" fill="#ddf4ff" stroke="#0969da" stroke-width="1.6"/>
+  <text x="606" y="64" font-size="13" font-weight="700" fill="#0969da">Heap: stacks of parked VTs</text>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#24292f">
+    <rect x="606" y="76" width="248" height="44" rx="6" fill="#ffffff" stroke="#0969da"/>
+    <text x="616" y="94">VT 2 · stack chunk</text>
+    <text x="616" y="110" fill="#57606a">handler → repo → socket.read</text>
+    <rect x="606" y="128" width="248" height="44" rx="6" fill="#ffffff" stroke="#0969da"/>
+    <text x="616" y="146">VT 4 · stack chunk</text>
+    <text x="616" y="162" fill="#57606a">job → queue.take()</text>
+    <rect x="606" y="180" width="248" height="44" rx="6" fill="#ffffff" stroke="#0969da"/>
+    <text x="616" y="198">VT 5 · stack chunk</text>
+    <text x="616" y="214" fill="#57606a">client → Thread.sleep(200)</text>
+    <rect x="606" y="232" width="248" height="44" rx="6" fill="#ffffff" stroke="#0969da"/>
+    <text x="616" y="250">VT 7, 9, 10, 12 …</text>
+    <text x="616" y="266" fill="#57606a">waiting on I/O, locks, timers</text>
+  </g>
+  <path d="M321,104 C380,176 520,180 604,150" fill="none" stroke="#0969da" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#b)"/>
+  <text x="452" y="186" font-size="11" fill="#0969da">unmount: frames copied to heap</text>
+
+  <!-- OS -->
+  <rect x="30" y="330" width="840" height="44" rx="10" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="450" y="357" text-anchor="middle" font-size="13" fill="#24292f"><tspan font-weight="700">OS threads</tspan><tspan dx="6">(one per carrier, ~1 MB stack each) → scheduled by the kernel onto CPU cores</tspan></text>
+
+  <!-- notes -->
+  <g font-size="13" fill="#24292f">
+    <text x="30" y="404"><tspan font-weight="700" fill="#0969da">Blocking call</tspan><tspan dx="6">(socket read, sleep, lock, queue.take): the VT unmounts and the carrier immediately runs another ready VT.</tspan></text>
+    <text x="30" y="428"><tspan font-weight="700" fill="#1a7f37">Ready again</tspan><tspan dx="6">(I/O completes, lock released): the VT is rescheduled and remounts on ANY free carrier.</tspan></text>
+    <text x="30" y="452"><tspan font-weight="700" fill="#cf222e">Pinned</tspan><tspan dx="6">(can't unmount): while running native code (JNI / FFM upcalls) or in some class-initialization paths.</tspan></text>
+    <text x="30" y="476"><tspan dx="0" fill="#57606a">synchronized and Object.wait() no longer pin since JDK 24 (JEP 491). On JDK 21–23 they did.</tspan></text>
+  </g>
+</svg>

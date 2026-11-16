@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="900" height="400" fill="#ffffff"/>
+  <defs>
+    <marker id="arrGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+    <marker id="arrPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8250df"/></marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a7f37"/></marker>
+  </defs>
+
+  <text x="450" y="32" text-anchor="middle" font-size="17" font-weight="600" fill="#24292f">Which thread runs what: subscribeOn vs publishOn</text>
+  <text x="450" y="54" text-anchor="middle" font-size="12.5" fill="#57606a">Flux.range(1, 3).map(a).publishOn(parallel()).map(b).subscribeOn(boundedElastic()).subscribe(...)  called from main</text>
+
+  <!-- pipeline boxes -->
+  <g font-size="13" text-anchor="middle">
+    <rect x="20"  y="80" width="125" height="46" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="82.5" y="108" fill="#24292f">Flux.range</text>
+    <rect x="165" y="80" width="125" height="46" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="227.5" y="108" fill="#24292f">map(a)</text>
+    <rect x="310" y="80" width="125" height="46" rx="6" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="372.5" y="101" fill="#1a7f37" font-weight="600">publishOn</text>
+    <text x="372.5" y="118" fill="#1a7f37" font-size="11.5">(parallel)</text>
+    <rect x="455" y="80" width="125" height="46" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="517.5" y="108" fill="#24292f">map(b)</text>
+    <rect x="600" y="80" width="125" height="46" rx="6" fill="#fbefff" stroke="#8250df"/>
+    <text x="662.5" y="101" fill="#8250df" font-weight="600">subscribeOn</text>
+    <text x="662.5" y="118" fill="#8250df" font-size="11.5">(boundedElastic)</text>
+    <rect x="745" y="80" width="135" height="46" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="812.5" y="101" fill="#24292f">subscriber</text>
+    <text x="812.5" y="118" fill="#57606a" font-size="11.5">(onNext runs here)</text>
+  </g>
+
+  <!-- lane 1: subscription travels upstream (right to left) -->
+  <text x="20" y="166" font-size="13" font-weight="600" fill="#24292f">1. subscribe() travels UPSTREAM (right to left)</text>
+  <line x1="870" y1="190" x2="733" y2="190" stroke="#57606a" stroke-width="4" marker-end="url(#arrGray)"/>
+  <text x="801" y="210" text-anchor="middle" font-size="11.5" fill="#57606a">on main</text>
+  <line x1="725" y1="190" x2="30" y2="190" stroke="#8250df" stroke-width="4" marker-end="url(#arrPurple)"/>
+  <text x="380" y="210" text-anchor="middle" font-size="11.5" fill="#8250df">subscribeOn switched the rest of the trip to boundedElastic-1</text>
+
+  <!-- lane 2: data flows downstream (left to right) -->
+  <text x="20" y="252" font-size="13" font-weight="600" fill="#24292f">2. onNext signals travel DOWNSTREAM (left to right)</text>
+  <line x1="30" y1="276" x2="362" y2="276" stroke="#8250df" stroke-width="4" marker-end="url(#arrPurple)"/>
+  <text x="196" y="296" text-anchor="middle" font-size="11.5" fill="#8250df">range emits, map(a) runs: boundedElastic-1</text>
+  <line x1="372" y1="276" x2="870" y2="276" stroke="#1a7f37" stroke-width="4" marker-end="url(#arrGreen)"/>
+  <text x="621" y="296" text-anchor="middle" font-size="11.5" fill="#1a7f37">after publishOn: map(b) and onNext run on parallel-1</text>
+
+  <!-- legend -->
+  <g font-size="12" fill="#24292f">
+    <rect x="20" y="326" width="14" height="14" fill="#57606a"/><text x="40" y="338">main (the caller)</text>
+    <rect x="170" y="326" width="14" height="14" fill="#8250df"/><text x="190" y="338">boundedElastic-1</text>
+    <rect x="320" y="326" width="14" height="14" fill="#1a7f37"/><text x="340" y="338">parallel-1</text>
+  </g>
+  <text x="20" y="366" font-size="12" fill="#57606a">Position of subscribeOn in the chain doesn't matter; if there are several, the one closest to the source wins.</text>
+  <text x="20" y="386" font-size="12" fill="#57606a">Each publishOn switches threads for every operator after it. A hot source (e.g. Netty) emits on its own thread whatever subscribeOn says.</text>
+</svg>

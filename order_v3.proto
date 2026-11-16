@@ -1,0 +1,10 @@
+syntax = "proto3";
+package demo.v3;
+option java_package = "demo.v3";
+option java_outer_classname = "OrderV3Proto";
+
+message Order {
+  string id = 1;
+  int64 customer_email = 2;     // type changed on an existing number
+  int32 discount_percent = 3;   // number 3 REUSED for a new meaning
+}

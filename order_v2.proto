@@ -1,0 +1,11 @@
+syntax = "proto3";
+package demo.v2;
+option java_package = "demo.v2";
+option java_outer_classname = "OrderV2Proto";
+
+message Order {
+  string id = 1;
+  string customer_email = 2;
+  int32 quantity = 3;
+  string currency = 4;          // added: a compatible change
+}

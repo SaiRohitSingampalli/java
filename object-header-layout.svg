@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" height="470" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="470" fill="#ffffff"/>
+  <text x="450" y="26" text-anchor="middle" font-size="18" font-weight="700" fill="#24292f">Object header layout (64-bit HotSpot, compressed oops)</text>
+
+  <!-- classic -->
+  <text x="30" y="62" font-size="15" font-weight="700" fill="#0969da">Classic header: 12 bytes (default up to Java 26)</text>
+  <g font-size="13">
+    <rect x="30" y="72" width="400" height="46" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="230" y="92" text-anchor="middle" font-weight="700" fill="#24292f">mark word</text>
+    <text x="230" y="110" text-anchor="middle" fill="#57606a">8 bytes</text>
+    <rect x="430" y="72" width="200" height="46" fill="#fbefff" stroke="#8250df"/>
+    <text x="530" y="92" text-anchor="middle" font-weight="700" fill="#24292f">class pointer</text>
+    <text x="530" y="110" text-anchor="middle" fill="#57606a">4 bytes (compressed)</text>
+    <rect x="630" y="72" width="170" height="46" fill="#dafbe1" stroke="#1a7f37"/>
+    <text x="715" y="92" text-anchor="middle" font-weight="700" fill="#24292f">fields…</text>
+    <text x="715" y="110" text-anchor="middle" fill="#57606a">reordered, packed</text>
+    <rect x="800" y="72" width="70" height="46" fill="#f6f8fa" stroke="#8c959f" stroke-dasharray="4 3"/>
+    <text x="835" y="99" text-anchor="middle" font-size="12" fill="#57606a">padding</text>
+  </g>
+  <!-- mark word expanded -->
+  <text x="30" y="146" font-size="13" fill="#24292f">mark word bits (unlocked object), high → low:</text>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12">
+    <rect x="30" y="154" width="190" height="34" fill="#f6f8fa" stroke="#8c959f"/>
+    <text x="125" y="176" text-anchor="middle" fill="#57606a">unused : 25</text>
+    <rect x="220" y="154" width="290" height="34" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="365" y="176" text-anchor="middle" fill="#24292f">identity hash : 31</text>
+    <rect x="510" y="154" width="50" height="34" fill="#f6f8fa" stroke="#8c959f"/>
+    <text x="535" y="176" text-anchor="middle" fill="#57606a">: 1</text>
+    <rect x="560" y="154" width="110" height="34" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="615" y="176" text-anchor="middle" fill="#24292f">GC age : 4</text>
+    <rect x="670" y="154" width="50" height="34" fill="#f6f8fa" stroke="#8c959f"/>
+    <text x="695" y="176" text-anchor="middle" fill="#57606a">: 1</text>
+    <rect x="720" y="154" width="150" height="34" fill="#ffebe9" stroke="#cf222e"/>
+    <text x="795" y="176" text-anchor="middle" fill="#24292f">lock : 2</text>
+  </g>
+  <text x="30" y="210" font-size="12" fill="#57606a">lock bits: 01 unlocked · 00 lightweight-locked · 10 inflated monitor · 11 marked by GC.</text>
+  <text x="30" y="227" font-size="12" fill="#57606a">The old "biased" bit is unused now that biased locking is gone. GC age is 4 bits, which is why MaxTenuringThreshold can't exceed 15.</text>
+
+  <!-- compact -->
+  <text x="30" y="266" font-size="15" font-weight="700" fill="#1a7f37">Compact header: 8 bytes (JEP 519 opt-in in Java 25 · default in Java 27 via JEP 534)</text>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12">
+    <rect x="30" y="276" width="150" height="40" fill="#fbefff" stroke="#8250df"/>
+    <text x="105" y="300" text-anchor="middle" fill="#24292f">class ptr : 22</text>
+    <rect x="180" y="276" width="250" height="40" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="305" y="300" text-anchor="middle" fill="#24292f">identity hash : 31</text>
+    <rect x="430" y="276" width="110" height="40" fill="#f6f8fa" stroke="#8c959f"/>
+    <text x="485" y="300" text-anchor="middle" fill="#57606a">reserved : 4</text>
+    <rect x="540" y="276" width="100" height="40" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="590" y="300" text-anchor="middle" fill="#24292f">age : 4</text>
+    <rect x="640" y="276" width="110" height="40" fill="#f6f8fa" stroke="#8c959f"/>
+    <text x="695" y="300" text-anchor="middle" fill="#57606a">self-fwd : 1</text>
+    <rect x="750" y="276" width="120" height="40" fill="#ffebe9" stroke="#cf222e"/>
+    <text x="810" y="300" text-anchor="middle" fill="#24292f">lock : 2</text>
+  </g>
+  <text x="30" y="336" font-size="12" fill="#57606a">22 + 31 + 4 + 4 + 1 + 2 = 64 bits. The class pointer moves INTO the mark word; the 4 reserved bits are earmarked for Project Valhalla.</text>
+
+  <!-- examples -->
+  <rect x="30" y="356" width="840" height="100" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="50" y="380" font-size="14" font-weight="700" fill="#24292f">What it means per object</text>
+  <g font-size="13" fill="#24292f">
+    <text x="50" y="404"><tspan font-family="ui-monospace, Menlo, Consolas, monospace">Long</tspan><tspan dx="10">12 header + 8 value = 20 → padded to</tspan><tspan font-weight="700" dx="6">24 bytes</tspan><tspan dx="16">· compact: 8 + 8 =</tspan><tspan font-weight="700" fill="#1a7f37" dx="6">16 bytes</tspan></text>
+    <text x="50" y="426"><tspan font-family="ui-monospace, Menlo, Consolas, monospace">record P(int x, int y)</tspan><tspan dx="10">12 + 8 = 20 →</tspan><tspan font-weight="700" dx="6">24 bytes</tspan><tspan dx="16">· compact: 8 + 8 =</tspan><tspan font-weight="700" fill="#1a7f37" dx="6">16 bytes</tspan></text>
+    <text x="50" y="448"><tspan font-family="ui-monospace, Menlo, Consolas, monospace">Integer</tspan><tspan dx="10">12 + 4 = 16 bytes</tspan><tspan dx="16">· compact: 8 + 4 = 12 → padded to 16 (no gain: alignment eats it)</tspan></text>
+  </g>
+</svg>

@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" width="900" height="580" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#0969da"/></marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="580" fill="#ffffff"/>
+  <text x="450" y="28" text-anchor="middle" font-size="18" font-weight="700" fill="#24292f">HashMap internals (Java 8+): put("id", 42)</text>
+
+  <!-- hash pipeline -->
+  <g font-size="13">
+    <rect x="40" y="46" width="230" height="56" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="155" y="69" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-weight="700" fill="#24292f">"id".hashCode()</text>
+    <text x="155" y="90" text-anchor="middle" fill="#57606a">= 3355 (0x0D1B)</text>
+    <rect x="325" y="46" width="250" height="56" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="450" y="69" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-weight="700" fill="#24292f">h ^ (h &gt;&gt;&gt; 16)</text>
+    <text x="450" y="90" text-anchor="middle" fill="#57606a">mix high bits into low bits</text>
+    <rect x="630" y="46" width="230" height="56" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+    <text x="745" y="69" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-weight="700" fill="#24292f">(n - 1) &amp; hash</text>
+    <text x="745" y="90" text-anchor="middle" fill="#57606a">15 &amp; 3355 = bucket 11</text>
+    <line x1="272" y1="74" x2="322" y2="74" stroke="#0969da" stroke-width="1.8" marker-end="url(#ab)"/>
+    <line x1="577" y1="74" x2="627" y2="74" stroke="#0969da" stroke-width="1.8" marker-end="url(#ab)"/>
+  </g>
+
+  <!-- table -->
+  <text x="40" y="132" font-size="14" font-weight="700" fill="#24292f">table[16]</text>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12">
+    <rect x="40" y="140" width="110" height="352" fill="#f6f8fa" stroke="#57606a"/>
+    <g stroke="#d0d7de">
+      <line x1="40" y1="162" x2="150" y2="162"/><line x1="40" y1="184" x2="150" y2="184"/>
+      <line x1="40" y1="206" x2="150" y2="206"/><line x1="40" y1="228" x2="150" y2="228"/>
+      <line x1="40" y1="250" x2="150" y2="250"/><line x1="40" y1="272" x2="150" y2="272"/>
+      <line x1="40" y1="294" x2="150" y2="294"/><line x1="40" y1="316" x2="150" y2="316"/>
+      <line x1="40" y1="338" x2="150" y2="338"/><line x1="40" y1="360" x2="150" y2="360"/>
+      <line x1="40" y1="382" x2="150" y2="382"/><line x1="40" y1="404" x2="150" y2="404"/>
+      <line x1="40" y1="426" x2="150" y2="426"/><line x1="40" y1="448" x2="150" y2="448"/>
+      <line x1="40" y1="470" x2="150" y2="470"/>
+      <line x1="68" y1="140" x2="68" y2="492"/>
+    </g>
+    <g fill="#57606a" text-anchor="middle">
+      <text x="54" y="155">0</text><text x="54" y="177">1</text><text x="54" y="199">2</text><text x="54" y="221">3</text>
+      <text x="54" y="243">4</text><text x="54" y="265">5</text><text x="54" y="287">6</text><text x="54" y="309">7</text>
+      <text x="54" y="331">8</text><text x="54" y="353">9</text><text x="54" y="375">10</text><text x="54" y="397">11</text>
+      <text x="54" y="419">12</text><text x="54" y="441">13</text><text x="54" y="463">14</text><text x="54" y="485">15</text>
+    </g>
+    <g fill="#8c959f" text-anchor="middle">
+      <text x="109" y="177">null</text><text x="109" y="199">null</text><text x="109" y="221">null</text>
+      <text x="109" y="243">null</text><text x="109" y="265">null</text><text x="109" y="287">null</text><text x="109" y="309">null</text>
+      <text x="109" y="331">null</text><text x="109" y="353">null</text><text x="109" y="375">null</text>
+      <text x="109" y="419">null</text><text x="109" y="441">null</text><text x="109" y="463">null</text><text x="109" y="485">null</text>
+    </g>
+    <circle cx="109" cy="151" r="5" fill="#24292f"/>
+    <circle cx="109" cy="393" r="5" fill="#0969da"/>
+  </g>
+
+  <!-- bucket 0 chain -->
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13">
+    <rect x="190" y="136" width="130" height="30" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="255" y="156" text-anchor="middle" fill="#24292f">"Aa" → 1</text>
+    <rect x="350" y="136" width="130" height="30" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="415" y="156" text-anchor="middle" fill="#24292f">"BB" → 2</text>
+    <rect x="510" y="136" width="130" height="30" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="575" y="156" text-anchor="middle" fill="#24292f">"C3" → 3</text>
+  </g>
+  <g stroke="#57606a" stroke-width="1.6">
+    <line x1="114" y1="151" x2="187" y2="151" marker-end="url(#a)"/>
+    <line x1="320" y1="151" x2="347" y2="151" marker-end="url(#a)"/>
+    <line x1="480" y1="151" x2="507" y2="151" marker-end="url(#a)"/>
+  </g>
+  <text x="190" y="186" font-size="12" fill="#57606a">collision chain in bucket 0: "Aa" and "BB" share hashCode 2112; "C3" is 2128</text>
+  <text x="190" y="203" font-size="12" fill="#57606a">get() walks the chain comparing hash, then ==, then equals(). New nodes go at the TAIL.</text>
+
+  <!-- bucket 11 -->
+  <rect x="190" y="378" width="130" height="30" rx="6" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="255" y="398" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13" fill="#24292f">"id" → 42</text>
+  <line x1="114" y1="393" x2="187" y2="393" stroke="#0969da" stroke-width="1.6" marker-end="url(#ab)"/>
+  <text x="190" y="428" font-size="12" fill="#57606a">Node = hash · key · value · next</text>
+  <text x="190" y="445" font-size="12" fill="#57606a">≈ 32 bytes each (compressed oops)</text>
+
+  <!-- tree inset -->
+  <rect x="520" y="240" width="350" height="222" rx="12" fill="#ffffff" stroke="#8250df" stroke-width="1.6" stroke-dasharray="6 4"/>
+  <text x="540" y="264" font-size="13" font-weight="700" fill="#8250df">TreeBin (only when table.length ≥ 64)</text>
+  <g stroke="#57606a" stroke-width="1.4">
+    <line x1="695" y1="300" x2="625" y2="350"/><line x1="695" y1="300" x2="765" y2="350"/>
+    <line x1="625" y1="350" x2="590" y2="404"/><line x1="625" y1="350" x2="660" y2="404"/>
+    <line x1="765" y1="350" x2="730" y2="404"/><line x1="765" y1="350" x2="800" y2="404"/>
+  </g>
+  <circle cx="695" cy="300" r="15" fill="#24292f"/>
+  <circle cx="625" cy="350" r="15" fill="#cf222e"/>
+  <circle cx="765" cy="350" r="15" fill="#cf222e"/>
+  <circle cx="590" cy="404" r="13" fill="#24292f"/>
+  <circle cx="660" cy="404" r="13" fill="#24292f"/>
+  <circle cx="730" cy="404" r="13" fill="#24292f"/>
+  <circle cx="800" cy="404" r="13" fill="#24292f"/>
+  <text x="540" y="442" font-size="12" fill="#57606a">a bin with ≥ 8 nodes becomes a red-black tree:</text>
+  <text x="540" y="458" font-size="12" fill="#57606a">O(log n) worst case instead of O(n)</text>
+
+  <!-- thresholds -->
+  <rect x="20" y="512" width="860" height="56" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="450" y="535" text-anchor="middle" font-size="13" fill="#24292f"><tspan font-weight="700">load factor 0.75</tspan><tspan dx="6">→ resize when size &gt; 12 (16 × 0.75). A resize doubles the table and splits each bin into lo/hi by (hash &amp; oldCap).</tspan></text>
+  <text x="450" y="556" text-anchor="middle" font-size="13" fill="#24292f"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-weight="700">TREEIFY_THRESHOLD 8 · UNTREEIFY_THRESHOLD 6 · MIN_TREEIFY_CAPACITY 64</tspan><tspan dx="6" fill="#57606a">(below 64, a long chain causes a resize instead)</tspan></text>
+</svg>

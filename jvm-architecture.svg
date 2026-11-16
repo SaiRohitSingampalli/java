@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 610" width="900" height="610" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="610" fill="#ffffff"/>
+  <text x="450" y="26" text-anchor="middle" font-size="18" font-weight="700" fill="#24292f">HotSpot JVM architecture</text>
+
+  <!-- class files -->
+  <rect x="330" y="40" width="240" height="38" rx="8" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="450" y="64" text-anchor="middle" font-size="14" fill="#24292f">.class files · JARs · modules</text>
+  <line x1="450" y1="78" x2="450" y2="100" stroke="#57606a" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- class loader subsystem -->
+  <rect x="40" y="102" width="820" height="98" rx="12" fill="#ddf4ff" stroke="#0969da" stroke-width="1.8"/>
+  <text x="58" y="124" font-size="15" font-weight="700" fill="#0969da">Class Loader Subsystem</text>
+  <g font-size="13">
+    <rect x="60" y="134" width="240" height="54" rx="8" fill="#ffffff" stroke="#0969da"/>
+    <text x="180" y="156" text-anchor="middle" font-weight="700" fill="#24292f">Loading</text>
+    <text x="180" y="176" text-anchor="middle" fill="#57606a">Bootstrap → Platform → App</text>
+    <rect x="330" y="134" width="240" height="54" rx="8" fill="#ffffff" stroke="#0969da"/>
+    <text x="450" y="156" text-anchor="middle" font-weight="700" fill="#24292f">Linking</text>
+    <text x="450" y="176" text-anchor="middle" fill="#57606a">verify → prepare → resolve</text>
+    <rect x="600" y="134" width="240" height="54" rx="8" fill="#ffffff" stroke="#0969da"/>
+    <text x="720" y="156" text-anchor="middle" font-weight="700" fill="#24292f">Initialization</text>
+    <text x="720" y="176" text-anchor="middle" fill="#57606a">run &lt;clinit&gt; (static init)</text>
+    <line x1="300" y1="161" x2="327" y2="161" stroke="#0969da" stroke-width="1.6" marker-end="url(#a)"/>
+    <line x1="570" y1="161" x2="597" y2="161" stroke="#0969da" stroke-width="1.6" marker-end="url(#a)"/>
+  </g>
+  <line x1="450" y1="200" x2="450" y2="220" stroke="#57606a" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- runtime data areas -->
+  <rect x="40" y="222" width="820" height="232" rx="12" fill="#ffffff" stroke="#24292f" stroke-width="1.6"/>
+  <text x="58" y="244" font-size="15" font-weight="700" fill="#24292f">Runtime Data Areas</text>
+
+  <!-- shared -->
+  <rect x="56" y="254" width="470" height="188" rx="10" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="70" y="274" font-size="13" font-weight="700" fill="#1a7f37">Shared by all threads</text>
+  <rect x="70" y="284" width="280" height="148" rx="8" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="84" y="304" font-size="14" font-weight="700" fill="#24292f">Heap</text>
+  <text x="128" y="304" font-size="12" fill="#57606a">objects · arrays · interned strings</text>
+  <rect x="82" y="314" width="256" height="54" rx="6" fill="#f6fff8" stroke="#8c959f"/>
+  <text x="92" y="330" font-size="12" fill="#57606a">young generation</text>
+  <rect x="92" y="336" width="120" height="26" rx="4" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="152" y="354" text-anchor="middle" font-size="12" fill="#24292f">Eden</text>
+  <rect x="220" y="336" width="54" height="26" rx="4" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="247" y="354" text-anchor="middle" font-size="12" fill="#24292f">S0</text>
+  <rect x="280" y="336" width="54" height="26" rx="4" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="307" y="354" text-anchor="middle" font-size="12" fill="#24292f">S1</text>
+  <rect x="82" y="374" width="256" height="48" rx="6" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="210" y="403" text-anchor="middle" font-size="13" fill="#24292f">old generation</text>
+
+  <rect x="362" y="284" width="152" height="70" rx="8" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="438" y="306" text-anchor="middle" font-size="14" font-weight="700" fill="#24292f">Metaspace</text>
+  <text x="438" y="325" text-anchor="middle" font-size="11" fill="#57606a">class metadata · bytecode</text>
+  <text x="438" y="341" text-anchor="middle" font-size="11" fill="#57606a">(native memory)</text>
+  <rect x="362" y="362" width="152" height="70" rx="8" fill="#ffffff" stroke="#1a7f37"/>
+  <text x="438" y="384" text-anchor="middle" font-size="14" font-weight="700" fill="#24292f">Code Cache</text>
+  <text x="438" y="403" text-anchor="middle" font-size="11" fill="#57606a">JIT-compiled machine code</text>
+  <text x="438" y="419" text-anchor="middle" font-size="11" fill="#57606a">(native memory)</text>
+
+  <!-- per thread -->
+  <rect x="540" y="254" width="306" height="188" rx="10" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="554" y="274" font-size="13" font-weight="700" fill="#9a6700">Per thread (one set each)</text>
+  <rect x="554" y="284" width="142" height="148" rx="8" fill="#ffffff" stroke="#9a6700"/>
+  <text x="625" y="303" text-anchor="middle" font-size="13" font-weight="700" fill="#24292f">JVM stack</text>
+  <rect x="566" y="312" width="118" height="34" rx="4" fill="#fffbe6" stroke="#d4a72c"/>
+  <text x="625" y="327" text-anchor="middle" font-size="11" fill="#24292f">frame: repo()</text>
+  <text x="625" y="340" text-anchor="middle" font-size="10" fill="#57606a">locals · operand stack</text>
+  <rect x="566" y="350" width="118" height="34" rx="4" fill="#fffbe6" stroke="#d4a72c"/>
+  <text x="625" y="365" text-anchor="middle" font-size="11" fill="#24292f">frame: service()</text>
+  <text x="625" y="378" text-anchor="middle" font-size="10" fill="#57606a">locals · operand stack</text>
+  <rect x="566" y="388" width="118" height="34" rx="4" fill="#fffbe6" stroke="#d4a72c"/>
+  <text x="625" y="403" text-anchor="middle" font-size="11" fill="#24292f">frame: main()</text>
+  <text x="625" y="416" text-anchor="middle" font-size="10" fill="#57606a">locals · operand stack</text>
+  <rect x="706" y="284" width="128" height="40" rx="8" fill="#ffffff" stroke="#9a6700"/>
+  <text x="770" y="309" text-anchor="middle" font-size="13" fill="#24292f">PC register</text>
+  <rect x="706" y="332" width="128" height="44" rx="8" fill="#ffffff" stroke="#9a6700"/>
+  <text x="770" y="358" text-anchor="middle" font-size="13" fill="#24292f">Native stack</text>
+  <rect x="706" y="384" width="128" height="48" rx="8" fill="none" stroke="#9a6700" stroke-dasharray="5 4"/>
+  <text x="770" y="404" text-anchor="middle" font-size="12" fill="#57606a">thread 2, 3, … N</text>
+  <text x="770" y="421" text-anchor="middle" font-size="11" fill="#57606a">(-Xss each)</text>
+
+  <line x1="300" y1="454" x2="300" y2="476" stroke="#57606a" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- execution engine -->
+  <rect x="40" y="478" width="540" height="116" rx="12" fill="#fbefff" stroke="#8250df" stroke-width="1.8"/>
+  <text x="58" y="500" font-size="15" font-weight="700" fill="#8250df">Execution Engine</text>
+  <g font-size="13">
+    <rect x="56" y="512" width="160" height="66" rx="8" fill="#ffffff" stroke="#8250df"/>
+    <text x="136" y="538" text-anchor="middle" font-weight="700" fill="#24292f">Interpreter</text>
+    <text x="136" y="558" text-anchor="middle" font-size="12" fill="#57606a">runs bytecode first</text>
+    <rect x="228" y="512" width="160" height="66" rx="8" fill="#ffffff" stroke="#8250df"/>
+    <text x="308" y="538" text-anchor="middle" font-weight="700" fill="#24292f">JIT: C1 → C2</text>
+    <text x="308" y="558" text-anchor="middle" font-size="12" fill="#57606a">profile-guided, speculative</text>
+    <rect x="400" y="512" width="166" height="66" rx="8" fill="#ffffff" stroke="#8250df"/>
+    <text x="483" y="538" text-anchor="middle" font-weight="700" fill="#24292f">Garbage Collector</text>
+    <text x="483" y="558" text-anchor="middle" font-size="12" fill="#57606a">G1 · ZGC · Shenandoah</text>
+  </g>
+
+  <!-- native -->
+  <rect x="600" y="478" width="260" height="52" rx="10" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="730" y="500" text-anchor="middle" font-size="14" font-weight="700" fill="#24292f">Native interface</text>
+  <text x="730" y="519" text-anchor="middle" font-size="12" fill="#57606a">JNI · Foreign Function &amp; Memory API</text>
+  <line x1="580" y1="504" x2="597" y2="504" stroke="#57606a" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="730" y1="530" x2="730" y2="546" stroke="#57606a" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="600" y="548" width="260" height="46" rx="10" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="730" y="576" text-anchor="middle" font-size="13" fill="#24292f">native libraries (.so · .dylib · .dll)</text>
+</svg>

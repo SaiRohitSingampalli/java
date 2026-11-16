@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#57606a"/></marker>
+  </defs>
+  <rect x="0" y="0" width="900" height="480" fill="#ffffff"/>
+  <text x="450" y="28" text-anchor="middle" font-size="18" font-weight="700" fill="#24292f">Why one thread's write can be invisible to another thread</text>
+
+  <!-- Core 1 -->
+  <rect x="30" y="46" width="390" height="236" rx="12" fill="#ddf4ff" stroke="#0969da" stroke-width="1.8"/>
+  <text x="48" y="70" font-size="15" font-weight="700" fill="#0969da">Core 1 · Thread A (writer)</text>
+  <text x="48" y="100" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#24292f">stop = true;</text>
+  <rect x="48" y="116" width="354" height="50" rx="8" fill="#fff8c5" stroke="#9a6700" stroke-width="1.6"/>
+  <text x="62" y="138" font-size="13" font-weight="700" fill="#24292f">store buffer</text>
+  <text x="62" y="156" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13" fill="#24292f">[ stop = true ]</text>
+  <text x="200" y="156" font-size="12" fill="#9a6700">← sits here before it is visible</text>
+  <rect x="48" y="180" width="168" height="38" rx="6" fill="#ffffff" stroke="#0969da"/>
+  <text x="132" y="204" text-anchor="middle" font-size="13" fill="#24292f">L1 cache</text>
+  <rect x="234" y="180" width="168" height="38" rx="6" fill="#ffffff" stroke="#0969da"/>
+  <text x="318" y="204" text-anchor="middle" font-size="13" fill="#24292f">L2 cache</text>
+  <text x="48" y="246" font-size="12" fill="#57606a">The compiler or CPU may also REORDER this store with</text>
+  <text x="48" y="264" font-size="12" fill="#57606a">earlier writes, unless something forbids it.</text>
+
+  <!-- Core 2 -->
+  <rect x="480" y="46" width="390" height="236" rx="12" fill="#fbefff" stroke="#8250df" stroke-width="1.8"/>
+  <text x="498" y="70" font-size="15" font-weight="700" fill="#8250df">Core 2 · Thread B (reader)</text>
+  <text x="498" y="100" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="14" fill="#24292f">while (!stop) { }</text>
+  <rect x="498" y="116" width="354" height="50" rx="8" fill="#ffebe9" stroke="#cf222e" stroke-width="1.6"/>
+  <text x="512" y="138" font-size="13" font-weight="700" fill="#24292f">register (JIT hoisted the read)</text>
+  <text x="512" y="156" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13" fill="#cf222e">stop = false</text>
+  <text x="640" y="156" font-size="12" fill="#cf222e">← read once, loops forever</text>
+  <rect x="498" y="180" width="168" height="38" rx="6" fill="#ffffff" stroke="#8250df"/>
+  <text x="582" y="204" text-anchor="middle" font-size="13" fill="#24292f">L1 cache</text>
+  <rect x="684" y="180" width="168" height="38" rx="6" fill="#ffffff" stroke="#8250df"/>
+  <text x="768" y="204" text-anchor="middle" font-size="13" fill="#24292f">L2 cache</text>
+  <text x="498" y="246" font-size="12" fill="#57606a">Reproduced on JDK 21: after main set stop = true,</text>
+  <text x="498" y="264" font-size="12" fill="#57606a">the worker was STILL spinning 3 seconds later.</text>
+
+  <!-- shared -->
+  <rect x="30" y="300" width="840" height="40" rx="8" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="450" y="325" text-anchor="middle" font-size="13" fill="#24292f"><tspan font-weight="700">Shared L3 cache</tspan><tspan dx="8">caches are kept coherent by hardware (MESI-style protocols)</tspan></text>
+  <rect x="30" y="352" width="840" height="40" rx="8" fill="#f6f8fa" stroke="#8c959f"/>
+  <text x="450" y="377" text-anchor="middle" font-size="13" fill="#24292f"><tspan font-weight="700">Main memory</tspan><tspan dx="8">stop: false → true (eventually, once Core 1's store buffer drains)</tspan></text>
+  <line x1="225" y1="282" x2="225" y2="298" stroke="#57606a" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#a)"/>
+  <line x1="675" y1="298" x2="675" y2="283" stroke="#57606a" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#a)"/>
+
+  <!-- takeaway -->
+  <rect x="30" y="406" width="840" height="62" rx="10" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="48" y="430" font-size="13" fill="#24292f"><tspan font-weight="700">The real culprits are compilers (registers, hoisting, reordering) and store buffers, not "stale caches".</tspan></text>
+  <text x="48" y="452" font-size="13" fill="#24292f"><tspan font-weight="700">Fix:</tspan><tspan dx="6" font-family="ui-monospace, Menlo, Consolas, monospace">volatile boolean stop;</tspan><tspan dx="8">The write publishes (release) and the read must re-load every time (acquire).</tspan></text>
+</svg>

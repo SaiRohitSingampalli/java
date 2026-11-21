@@ -220,6 +220,7 @@ public Response pay(String idempotencyKey, ChargeRequest req) {
     // 1. Claim the key in a short transaction of its own, committed BEFORE any side effect:
     //    INSERT INTO payment_operation (id, merchant_id, idempotency_key, request_hash, state, created_at)
     //    VALUES (?, ?, ?, ?, 'PENDING', now()) ON CONFLICT (merchant_id, idempotency_key) DO NOTHING
+    //    (fine with a random ID; if the ID is derived from the key, as in Chapter 36, omit the conflict target)
     Operation op = Operation.pending(newOperationId(), merchantId, idempotencyKey, hash(req), req.amount());
     Optional<Operation> existing = operations.claim(op);
     if (existing.isPresent()) return answer(existing.get(), req);      // replay, 409, 422 or 202 (table below)
@@ -246,28 +247,37 @@ public Response pay(String idempotencyKey, ChargeRequest req) {
 **The rules that make it safe:**
 1. **Claim before acting.** The unique constraint decides which request owns the operation *before* money moves, and the claim commits on its own so concurrent duplicates see it. Everyone else gets a 409 and retries later.
 2. **One processor key per operation, reused on every re-send.** After a timeout the outcome is *unknown*: the card may have been charged. Re-sending with the same key lets the processor replay its first result; a fresh key per attempt charges twice. A new key is right only for a genuinely new operation after a *definite* failure (a decline, then the customer tries another card).
-3. **A reconciler settles what's stuck:** `UNKNOWN` operations, and `PENDING` ones older than a lease, whose caller crashed. While the processor still remembers the key (Stripe documents 24 hours), it re-sends with the same key. After that it **looks the charge up by your reference** and never re-sends. Daily settlement-file reconciliation is the last net.
+3. **A reconciler settles what's stuck:** `UNKNOWN` operations, and `PENDING` ones older than a lease, whose caller crashed. While the processor still remembers the key (Stripe may prune keys once they're 24 hours old), it re-sends with the same key. After that it never re-sends: it **looks the charge up by your reference**. A hit settles it; **an empty result doesn't**, because search indexes lag behind charges (Stripe's search is eventually consistent), so the operation stays `UNKNOWN` until an authoritative source, such as the settlement report, says there was no charge. Daily settlement-file reconciliation is the last net.
 4. **Store the response**, scope keys per client or merchant, and keep records longer than any client retries. A guarded update (`WHERE state IN (…)`) makes exactly one writer record the outcome.
 
-The lab runs both versions against a simulated processor that deduplicates its own keys for 24 hours (excerpt; run on JDK 25):
+The lab runs both versions against a simulated processor that deduplicates its own keys for 24 hours (excerpt; run on JDK 25). Part 1 varies a little from run to run:
 ```
 1. Four identical requests at once, for each of 1,000 payments (same Idempotency-Key)
    handler                    PSP charges   charged 2+ times   first responses
    check, charge, then save         3,997                999   1,000 x 201 charged, 3 x 201 replayed, 2,997 x 500 duplicate key
-   claim the key first              1,000                  0   1,000 x 201 charged, 5 x 201 replayed, 2,995 x 409 in progress
-   2,995 clients that got 409 retried after Retry-After: 2,995 x 201 replayed
-
+   claim the key first              1,000                  0   1,000 x 201 charged, 9 x 201 replayed, 2,991 x 409 in progress
+   2,991 clients that got 409 retried after Retry-After: 2,991 x 201 replayed
+```
+The other parts are deterministic:
+<!-- lab-output: PaymentIdempotency.java -->
+```
 3. The PSP charges the card but the response is lost (a timeout), so the service retries the PSP call
-   PSP key on the retry                     PSP charges
-   a new key per attempt (op-17-attempt-2)            2   client got 201 charged ch_4002
-   the operation's key again (op-17)                  1   client got 201 charged ch_4001
+   PSP key on the retry                            PSP charges
+   a new key per attempt (op-6e3fae65-attempt-2)             2   client got 201 charged ch_4002
+   the operation's key again (op-6e3fae65)                   1   client got 201 charged ch_4001
 
 5. An outcome still unknown 26 hours later (say the reconciler was down); the PSP keeps keys for 24 hours
    reconciler                               PSP charges
    re-sends with the same key                         2   client had 202 processing, Retry-After: 5; now SUCCEEDED ch_4002
    looks the charge up by our reference               1   client had 202 processing, Retry-After: 5; now SUCCEEDED ch_4001
+
+6. A PSP without idempotency keys: after a timeout, look the charge up before charging again
+   (its search lags up to 5 minutes behind its charges)
+   when the search finds nothing                     PSP charges
+   take it as "not charged" and charge again                   2   client got 201 charged ch_4002; the first charge is now a double charge
+   keep it UNKNOWN until an answer is authoritative            1   client got 202 processing, Retry-After: 5; 10 min later the search found it: SUCCEEDED ch_4001
 ```
-The first order charged 999 of 1,000 payments more than once, and its "500 duplicate key" responses came *after* the charges. Claiming first charged each payment once and turned the duplicates into 409s that later replayed. The lab also crashes the process between charge and save, sends a different amount under the same key (422), and checks four invariants on every correct run: no payment charged twice, one charge per successful payment, no charge without a payment, and a balanced ledger. [Chapter 36](36-case-study-payments.md) takes this design through a full review: state machine, ledger, reconciliation and rollout.
+The first order charged 999 of 1,000 payments more than once, and its "500 duplicate key" responses came *after* the charges. Claiming first charged each payment once and turned the duplicates into 409s that later replayed. Part 6 is rule 3's warning in action: treating an empty search as "not charged" made a double charge. The lab also crashes the process between charge and save, sends a different amount under the same key (422), loses the payment's row in a failover, moves a merchant from the old handler to the new one mid-retry, and checks four invariants on every correct run: no checkout charged twice, one charge per successful payment, no charge without a payment, and a balanced ledger. [Chapter 36](36-case-study-payments.md) takes this design through a full review: state machine, ledger, reconciliation, what survives a failover, and a migration tested in both directions against PostgreSQL.
 
 **Idempotent consumers** for messages:
 ```java
@@ -525,7 +535,7 @@ Writing to the database and publishing to a broker are two separate operations w
 <details>
 <summary><b>Q4. 🔴 How do you implement idempotency for a payment API?</b></summary>
 
-The client sends an `Idempotency-Key` per logical operation. The server **claims** the key first: it inserts a `PENDING` operation (key, request hash) under a unique constraint and commits *before* charging, so concurrent duplicates lose the insert and get `409` with `Retry-After`. Then it calls the processor with no transaction open, using a processor idempotency key that belongs to the operation, and records the outcome with a guarded update, plus ledger and outbox rows, in one transaction. Retries replay the stored response; the same key with a different payload gets `422`. A timeout leaves the operation `UNKNOWN`, never "failed": a reconciler re-sends with the *same* processor key while the processor remembers it, then looks the charge up by reference, and daily settlement reconciliation catches the rest. Checking for a saved response, charging, then saving is the classic bug: in the lab it charged 999 of 1,000 payments more than once under concurrent retries.
+The client sends an `Idempotency-Key` per logical operation. The server **claims** the key first: it inserts a `PENDING` operation (key, request hash) under a unique constraint and commits *before* charging, so concurrent duplicates lose the insert and get `409` with `Retry-After`. Then it calls the processor with no transaction open, using a processor idempotency key that belongs to the operation, and records the outcome with a guarded update, plus ledger and outbox rows, in one transaction. Retries replay the stored response; the same key with a different payload gets `422`. A timeout leaves the operation `UNKNOWN`, never "failed": a reconciler re-sends with the *same* processor key while the processor remembers it, then looks the charge up by reference (an empty search keeps it `UNKNOWN`), and daily settlement reconciliation catches the rest. Checking for a saved response, charging, then saving is the classic bug: in the lab it charged 999 of 1,000 payments more than once under concurrent retries.
 </details>
 
 <details>

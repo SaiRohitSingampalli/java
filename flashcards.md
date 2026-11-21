@@ -2,15 +2,15 @@
 
 # 🃏 Flashcards
 
-All **629 self-test questions** from the 39 chapters, ready for spaced repetition.
+All **640 self-test questions** from the 39 chapters, ready for spaced repetition.
 
 | File | Use it for |
 |---|---|
 | [`flashcards-anki.txt`](flashcards-anki.txt) | Importing into **Anki**: formatted answers, tags, and stable IDs so updates don't create duplicates |
 | [`flashcards.csv`](flashcards.csv) | Spreadsheets or other flashcard apps: plain text, one row per question (`chapter, chapter_title, question_no, purpose, question, answer`) |
 
-**Cards per purpose:** 🟢 fundamentals 33 · 🟡 practice 159 · 🔴 mechanisms & diagnosis 321 · 🟣 system decisions 79 · 🔵 organisational execution 37
-**Cards per part:** I 120 · II 27 · III 30 · IV 35 · V 20 · VI 37 · VII 20 · VIII 30 · IX 199 (including the 172-question bank) · X 36 · XI 19 · XII 28 · XIII 28
+**Cards per purpose:** 🟢 fundamentals 33 · 🟡 practice 159 · 🔴 mechanisms & diagnosis 325 · 🟣 system decisions 84 · 🔵 organisational execution 39
+**Cards per part:** I 120 · II 27 · III 30 · IV 35 · V 20 · VI 37 · VII 20 · VIII 30 · IX 205 (including the 178-question bank) · X 36 · XI 19 · XII 28 · XIII 33
 
 ## Importing into Anki
 

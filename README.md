@@ -3,7 +3,7 @@
 # ☕ Java Interview Mastery
 ### Java, from the fundamentals to staff and architect interviews
 
-**39 chapters · deep internals · diagrams · runnable labs · 629 self-test questions as flashcards · one-page revision sheets · three case studies and five artefact exercises**
+**39 chapters · deep internals · diagrams · runnable labs · 640 self-test questions as flashcards · one-page revision sheets · three case studies and five artefact exercises**
 
 ![Java](https://img.shields.io/badge/Java-8%20→%2027-ED8B00?logo=openjdk&logoColor=white)
 ![LTS](https://img.shields.io/badge/LTS-21%20%7C%2025-blue)
@@ -175,10 +175,10 @@ flowchart TD
 ### Part XIII — Design Reviews & Practice
 | # | Chapter | You will master | Markers |
 |---|---|---|---|
-| 36 | [Case Study: Payments That Never Charge Twice](36-case-study-payments.md) | A payment flow taken through a design review: invariants, claim-first idempotency, unknown outcomes and reconciliation, an ADR, migration stages and rollback limits, with the failure analysis measured | 🟣→🔵 |
+| 36 | [Case Study: Payments That Never Charge Twice](36-case-study-payments.md) | A payment flow taken through a design review: invariants, claim-first idempotency, unknown outcomes and reconciliation, what survives a failover, an ADR, a migration tested in both directions and rollback limits, with the failure analysis measured in a simulation and against PostgreSQL | 🟣→🔵 |
 | 37 | [Case Study: Moving 180 Services to JDK 25](37-case-study-fleet-jdk-upgrade.md) | A fleet upgrade from real evidence: what static scans miss, flags that stop a JVM starting, locale and GC changes, canary gates that count requests, owners, exceptions and the one-way steps | 🔴→🔵 |
-| 38 | [Case Study: A Multi-Tenant Webhook Delivery Platform](38-case-study-webhook-delivery.md) | Isolation measured (shared queue vs per-endpoint caps vs breakers), signatures and SSRF checks, a delivery state machine, and moving tenants without double sends | 🟣→🔵 |
-| 39 | [Staff & Architect Artefacts: Exercises](39-staff-artefact-exercises.md) | A decision worked through in eight parts with a real experiment; a one-page proposal, an RFC with dissent, a migration plan, a cost comparison and a follow-up memo, each with a rubric; your evidence log | 🟣→🔵 |
+| 38 | [Case Study: A Multi-Tenant Webhook Delivery Platform](38-case-study-webhook-delivery.md) | Isolation measured (shared queue vs per-endpoint caps vs breakers), signatures and SSRF checks, a delivery state machine, replays that are neither swallowed nor doubled, and moving tenants without double sends | 🟣→🔵 |
+| 39 | [Staff & Architect Artefacts: Exercises](39-staff-artefact-exercises.md) | A decision worked through in eight parts with a real experiment and its control; a one-page proposal, an RFC with dissent, a migration plan, a cost comparison and a follow-up memo, each with a rubric; your evidence log | 🟣→🔵 |
 
 ---
 
@@ -187,7 +187,7 @@ flowchart TD
 | Tool | What it is | Use it when |
 |---|---|---|
 | 🧪 [**Labs**](labs.md) | The Java programs behind the chapters' measured outputs (timings, GC logs, thread dumps, `javap` listings), indexed by chapter with run commands. Each file's header says what it shows, what it needs and when it was last verified. `./run-quick.sh` runs the fast ones in about a minute and a half; `./verify-labs.sh` runs all of them on every JDK you give it | Reading a chapter: run the program, then change it and predict the new output |
-| 🃏 [**Flashcards**](flashcards.md) | All 629 questions as an Anki deck (tagged by chapter, part and purpose) and as a CSV | Daily, from the first week: spaced repetition turns recognition into recall |
+| 🃏 [**Flashcards**](flashcards.md) | All 640 questions as an Anki deck (tagged by chapter, part and purpose) and as a CSV | Daily, from the first week: spaced repetition turns recognition into recall |
 | 📋 [**Revision sheets**](revision.md) | One page per part: the numbers, rules, traps and one-liners worth having in your head | The last week before an interview, one part a day |
 
 ---

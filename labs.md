@@ -14,9 +14,10 @@ Snippets that need Spring, Reactor, gRPC, GraphQL, Spring AI, LangChain4j, a Red
   - Jackson 2.12+ (`jackson-databind`, `jackson-core`, `jackson-annotations`) for `StartupApp.java`, `ApiDemos.java` and `Guardrails.java`;
   - `protoc` plus `protobuf-java` **of the same version** for `ProtoDemo.java` and its three `.proto` files;
   - Guava and `protobuf-java` JARs for Chapter 37's `UnsafeProbe.java` and `fleet-inventory.sh` (tested: Guava 32.0.1, protobuf-java 3.21.12);
-  - a throwaway Redis 7+ or Valkey server for `RedisLabs.java` (the lab flushes it, and refuses to touch a server that holds data).
+  - a throwaway Redis 7+ or Valkey server for `RedisLabs.java` (the lab flushes it, and refuses to touch a server that holds data);
+  - a throwaway PostgreSQL 14+ database whose name ends in `_lab`, plus the PostgreSQL JDBC driver, for `PaymentsPostgres.java` and `WebhookReplayPostgres.java` (tested: PostgreSQL 16.15, driver 42.7.2). Each lab drops and recreates its own schema, and refuses any other database. One way to get one: `docker run -d -p 5433:5432 -e POSTGRES_USER=lab -e POSTGRES_PASSWORD=lab -e POSTGRES_DB=payments_lab postgres:16`.
 
-  Set `JACKSON_CP` to the three Jackson JARs, colon-separated (use `;` on Windows), and `GUAVA_JAR` and `PROTOBUF_JAR` to the other two.
+  Set `JACKSON_CP` to the three Jackson JARs, colon-separated (use `;` on Windows), and `GUAVA_JAR` and `PROTOBUF_JAR` to the other two. For `verify-labs.sh`, set `PG_URL` to the database's JDBC URL (for the container above, `jdbc:postgresql://localhost:5433/payments_lab?user=lab&password=lab`) and `PG_JDBC_JAR` to the driver JAR.
 - **Every lab file starts with a header** that says what it shows, which chapters use it, the exact command, what it needs, the JDKs and date it was last verified on, its sources, and what its output should look like (deterministic, or varying from run to run).
 - **Self-checking labs** test their own invariants and exit with status 1 if one fails; when everything holds, most print nothing extra, so their output stays as the chapter shows it.
 - **Everything fast at once:** `./run-quick.sh` runs 33 self-contained labs in about a minute and a half, checks each one's exit status, prints a summary, and exits with status 1 if any lab ended unexpectedly.
@@ -109,7 +110,7 @@ Snippets that need Spring, Reactor, gRPC, GraphQL, Spring AI, LangChain4j, a Red
 ### Chapter 23 · Distributed systems
 | Lab | Shows | Run |
 |---|---|---|
-| `PaymentIdempotency.java` | Idempotency keys done wrong and right: concurrent duplicates, a crash after charging, lost PSP responses, key reuse with a different payload, reconciliation after the PSP forgets its keys. *Self-checking* | `java PaymentIdempotency.java` |
+| `PaymentIdempotency.java` | Idempotency keys done wrong and right: concurrent duplicates, a crash after charging, lost PSP responses, key reuse with a different payload, reconciliation after the PSP forgets its keys, and why an empty search isn't proof. *Self-checking* | `java PaymentIdempotency.java` |
 
 ### Chapter 24 · System design
 | Lab | Shows | Run |
@@ -183,7 +184,8 @@ No model and no network: these labs cover the parts of an AI feature that are pl
 ### Chapter 36 · Case study: payments
 | Lab | Shows | Run |
 |---|---|---|
-| `PaymentIdempotency.java` | The failure analysis in §6: check-then-save against claim-first under concurrent retries, crashes, lost responses and key reuse; reconciliation after the PSP forgets its keys. *Self-checking* | `java PaymentIdempotency.java` |
+| `PaymentIdempotency.java` | The failure analysis in §6: check-then-save against claim-first under concurrent retries, crashes, lost responses and key reuse; reconciliation after the PSP forgets its keys; a lagging search; a failover that loses the row, with and without a charge journal; and the cutover from the old handler. *Self-checking* | `java PaymentIdempotency.java` |
+| `PaymentsPostgres.java` | The same design against a real PostgreSQL (§6 and §7): concurrent claims and the `ON CONFLICT` arbiter, one transaction for state, ledger and outbox, guarded updates, reconcilers sharing work with `SKIP LOCKED`, and the migration test in both directions. Needs PostgreSQL and its JDBC driver. *Self-checking* | `java -cp postgresql.jar PaymentsPostgres.java "$PG_URL"` |
 
 ### Chapter 37 · Case study: fleet JDK upgrade
 Run each one with the JDK you're leaving **and** the one you're moving to; the differences are the point.
@@ -205,11 +207,12 @@ Run each one with the JDK you're leaving **and** the one you're moving to; the d
 |---|---|---|
 | `WebhookFairness.java` | A deterministic simulation of one broken endpoint and one backfill: a shared FIFO queue, per-endpoint queues with caps, and caps plus circuit breakers (about 2 s). *Self-checking* | `java WebhookFairness.java` |
 | `WebhookSigning.java` | Standard Webhooks signatures (tampering, replay, rotation) and a naive vs strict check of endpoint addresses. *Self-checking* | `java WebhookSigning.java` |
+| `WebhookReplayPostgres.java` | Replays against a real PostgreSQL (§3.2): why one delivery per (event, endpoint) swallows a replay, a replay ID per replay, and an `Idempotency-Key` that stops a retried replay call sending twice. Needs PostgreSQL and its JDBC driver. *Self-checking* | `java -cp postgresql.jar WebhookReplayPostgres.java "$PG_URL"` |
 
 ### Chapter 39 · Staff & architect artefacts
 | Lab | Shows | Run |
 |---|---|---|
-| `VtDecision.java` | The experiment behind §3's decision: a platform pool, unbounded virtual threads, and virtual threads with a bulkhead and deadlines, at normal load and 1.5× capacity (real threads; about 35 s) | `java VtDecision.java` |
+| `VtDecision.java` | The experiment behind §3's decision: platform and virtual threads, each with and without a bulkhead and deadlines, at normal load and 1.5× capacity; then 300 concurrent slow calls, where the thread model matters (real threads; about a minute) | `java VtDecision.java` |
 | `CostModel.java` | Exercise 4's build-versus-buy model, month by month, with a sensitivity table and break-even prices. Edit the inputs at the top | `java CostModel.java` |
 
 ---

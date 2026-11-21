@@ -47,11 +47,11 @@ What tenants are promised (the public contract):
 | # | Promise |
 |---|---|
 | P1 | **At least once.** Every accepted event is delivered with a 2xx, or, after three days of failures, marked dead and shown to the tenant. Nothing is dropped silently |
-| P2 | **A stable ID.** Every attempt at a delivery carries the same `webhook-id`, so receivers can discard duplicates |
+| P2 | **A stable ID.** Every attempt at a delivery carries the same `webhook-id`, so receivers can discard duplicates. A replay is a new delivery, with a new ID |
 | P3 | **Isolation.** A healthy endpoint gets 99% of its events within 5 seconds, whatever other tenants' endpoints are doing |
 | P4 | **Authenticity.** Every request is signed, with a timestamp the receiver checks |
 | P5 | **No global order.** Payloads carry a per-resource sequence number; receivers that need order compare it |
-| P6 | **Replay** of any event from the last 14 days |
+| P6 | **Replay** of any event from the last 14 days, as often as the tenant asks. Each replay request is delivered once, however often the call that made it is retried |
 
 What must hold inside the platform:
 
@@ -81,7 +81,7 @@ flowchart LR
     S3[("Object storage<br/>payloads, 14 days")] --> D
 ```
 - **Producers** publish domain events through their outbox, as payments already does. They never see a tenant's endpoint.
-- **Fan-out** matches each event against subscriptions and writes one `delivery` row per endpoint, unique on (event ID, endpoint ID), so an event processed twice doesn't create a second delivery. The notices keyed by endpoint ID go out through an outbox in the same transaction ([Chapter 23 §6](23-distributed-systems-microservices.md#6-the-dual-write-problem--the-transactional-outbox-)), so a crash can't leave a delivery without its notice. The payload goes to object storage once per event.
+- **Fan-out** matches each event against subscriptions and writes one `delivery` row per endpoint, unique on (event ID, endpoint ID, replay ID). Fan-out always writes replay ID 0, so an event processed twice doesn't create a second delivery, while a replay, with an ID of its own, can (§3.2). The notices keyed by endpoint ID go out through an outbox in the same transaction ([Chapter 23 §6](23-distributed-systems-microservices.md#6-the-dual-write-problem--the-transactional-outbox-)), so a crash can't leave a delivery without its notice. The payload goes to object storage once per event.
 - **Dispatchers** consume the notices. Kafka's partition assignment gives **each endpoint exactly one owner** at a time, so the per-endpoint queue, the in-flight count and the breaker are plain local state: no distributed locks.
 - **The database is the source of truth**, Kafka only the doorbell. Because the delivery row already exists, a dispatcher can commit a notice's offset as soon as it has queued the delivery, and retries are scheduled in the database, not by holding Kafka offsets back. That matters because a Kafka consumer commits *positions*: one endpoint's retry, held as an uncommitted offset, would pin the position of every other endpoint in that partition. After a restart or rebalance, the new owner loads its endpoints' pending deliveries from the database, and every dispatcher sweeps for pending deliveries older than a minute as a backstop.
 
@@ -101,7 +101,7 @@ stateDiagram-v2
     DEAD --> [*]
 ```
 - **Retries:** exponential backoff with jitter, from 30 seconds up to 6 hours apart, for three days (about 20 attempts). A `429` with `Retry-After` pauses the endpoint's queue for that long and doesn't count towards its breaker. A `410 Gone` disables the subscription, because the receiver asked.
-- **Replays** create a *new* delivery with a new `webhook-id`, since the receiver asked to see the event again and its dedupe mustn't drop it. The payload's `event_id` stays the same.
+- **Replays** create a *new* delivery with a new `webhook-id`, since the receiver asked to see the event again and its dedupe mustn't drop it. The payload's `event_id` stays the same. A replay starts as a call to `POST /replays`, from the API or the portal, with its own `Idempotency-Key`. In one transaction, the platform claims the key as a `replay_request` row, unique on (tenant ID, key), and writes the delivery with that row's ID as its replay ID. A retried call finds the row and gets the first answer, so it can't queue a second delivery, while two separate requests are two deliveries. The `webhook-id` is a name-based UUID of (event ID, endpoint ID) for the original, which is what producers derive in stage 1 (§7), and of (event ID, endpoint ID, replay ID) for a replay; each delivery's retries reuse its own. §6.3 shows the schema doing this against PostgreSQL.
 - **An expired lease** can mean the request reached the tenant before the dispatcher died, so the next attempt is a duplicate with the same `webhook-id`. That's what P2 is for.
 
 ### 3.3 Scheduling: the part that decides isolation
@@ -175,12 +175,14 @@ At this scale a partitioned PostgreSQL table is enough. Mock 2's interviewer des
   endpoints through Kafka partition assignment and keep a queue, a 16-request concurrency cap and a circuit breaker
   per endpoint, serving endpoints round-robin. The database is the source of truth for retries (backoff with
   jitter, 30 s to 6 h, for 3 days). Requests follow the Standard Webhooks headers and signatures and leave through
-  an egress proxy that allows only global unicast addresses.
+  an egress proxy that allows only global unicast addresses. Deliveries are unique per (event, endpoint, replay);
+  a replay is a request with its own idempotency key, delivered once under a webhook-id of its own.
 - Consequences:
   + A tenant's outage or backfill no longer delays other tenants (lab: healthy p99 120 ms instead of 6.2 min)
   + A dead endpoint costs a probe every couple of minutes instead of a slice of the pool (lab: 25 timed-out
     attempts instead of 960 per 10-minute outage)
   + Every attempt is logged, so "never received" tickets are answered with evidence, and tenants can replay
+    (lab: two replays of one event, two deliveries; eleven retries of one replay call, one delivery)
   - Receivers must deduplicate by webhook-id and must not rely on order
   - A recovered endpoint is noticed up to one probe interval later (lab: backlog cleared in 60 s instead of 31 s)
   - A new service, a delivery database and an egress proxy to operate
@@ -280,6 +282,33 @@ What it shows:
 - **The naive address check misses 8 of 15**, including the cloud metadata service in two spellings, `0.0.0.0` (which reaches the local host on Linux) and every IPv6 private range. Java's `isSiteLocalAddress()` covers only the long-deprecated `fec0::/10` for IPv6, not unique local addresses. So the strict check allow-lists global unicast instead of deny-listing private ranges.
 - **Parsers disagree.** Java reads `0177.0.0.1` as decimal (177.0.0.1); C's `inet_aton` reads it as octal (127.0.0.1). If one component checks the address and another one parses the name again to connect, they can reach different machines. Hence I4: resolve once, check, and connect to exactly that address.
 
+### 6.3 Replays: one delivery per request, not per event
+
+The first draft of this design made deliveries unique on (event ID, endpoint ID) and promised replays as new deliveries: a contradiction, since a replay keeps the event ID. `WebhookReplayPostgres.java` runs the schema against PostgreSQL 16 (deterministic):
+<!-- lab-output: WebhookReplayPostgres.java -->
+```
+1. A tenant replays one delivered event twice, a day apart (each replay inserts a delivery, as fan-out does)
+   delivery rows unique on                  replays accepted  deliveries queued by replays  distinct webhook-ids
+   (event_id, endpoint_id)                                 2                             0                     1
+   (event_id, endpoint_id, replay_id)                      2                             2                     3
+   With the first constraint, both replays were accepted and nothing was sent: ON CONFLICT DO NOTHING hid it.
+
+2. Fan-out processes the same event twice (a redelivered Kafka message): rows inserted 1, then 0; originals: 1
+   its webhook-id equals the one producers derived in stage 1 from (event_id, endpoint_id): yes
+
+3. The portal's replay call is retried: 3 times in a row, then 8 copies at once
+   replay call                                  replay requests  deliveries   responses
+   no Idempotency-Key                                        11          11   11 x 202, 11 different replay IDs
+   Idempotency-Key, UNIQUE (tenant_id, key)                   1           1   11 x 202 replay 1
+   the same key with a different event                        1           1   422 idempotency_key_reused
+
+4. 20 different replay requests for the same event at once: 20 deliveries, 20 distinct webhook-ids, 0 errors
+```
+- **The old constraint fails silently.** Each replay was accepted and nothing was sent: the replay's insert hit the (event, endpoint) constraint, and the `ON CONFLICT DO NOTHING` that makes fan-out safe swallowed it. The tenant would have been told "replay queued" and received nothing, which is worse than an error.
+- **A replay ID separates replays without weakening fan-out's dedupe.** The original keeps replay ID 0 and the `webhook-id` producers already derive, so a redelivered Kafka message still writes nothing new.
+- **The replay call needs its own idempotency.** Without a key, eleven retries of one click became eleven deliveries, each with a new `webhook-id`, which the receiver can't tell from eleven deliberate replays. With a key unique per tenant, the same eleven calls made one replay and got one answer, and reusing the key for a different event was refused.
+- **Concurrent replays don't collide.** Twenty different requests for the same event at once got twenty deliveries and twenty IDs, with no errors, because the replay ID comes from the request's own row rather than a counter read and incremented.
+
 ---
 
 ## 7. Migration stages 🔵
@@ -289,7 +318,7 @@ From "producers send" to the platform, one tenant at a time:
 | Stage | What happens | Gate to the next stage |
 |---|---|---|
 | 0. Measure | Count each producer's sends, failures and give-ups per tenant; tag "never received" tickets | Two weeks of baseline |
-| 1. Headers first | Producers add `webhook-id` and signatures to their existing sends. The ID is derived from (event ID, endpoint ID), a name-based UUID, so the platform will derive the same one later. Endpoint registrations and secrets move to one shared store | Docs published; tenants told they can verify and dedupe |
+| 1. Headers first | Producers add `webhook-id` and signatures to their existing sends. The ID is derived from (event ID, endpoint ID), a name-based UUID, so the platform will derive the same one later for the original delivery (replays add their replay ID: §3.2). Endpoint registrations and secrets move to one shared store | Docs published; tenants told they can verify and dedupe |
 | 2. Shadow | The platform consumes events and records what it *would* send, without sending | Its deliveries match the producers' sends per tenant within 0.1% |
 | 3. Switch by tenant | A per-tenant flag in the shared store: the platform sends, the producers skip. Internal test endpoints, then 1%, 10%, 50%, 100% of tenants, a few days apart | Healthy endpoints' p99 under 5 s; no tenant's success rate lower than its baseline |
 | 4. Contract | Delete the producers' sending code; open the portal (log, replay, secret rotation) to everyone | 30 days at 100% with no rollback |
@@ -327,6 +356,7 @@ From "producers send" to the platform, one tenant at a time:
 | Worker-seconds spent on failing attempts, per endpoint | Alert when one endpoint takes more than 5% of a dispatcher's capacity | What the caps and breakers bound (§6.1) |
 | Endpoints with an open breaker; endpoints disabled | Trend, with the tenant notified | Outages on their side, and our probes |
 | Dead deliveries per day; replays requested | Low, and each visible to its tenant | P1, P6 |
+| Replay calls answered from an earlier request (retries), and replay requests without a delivery | Retries: measured; requests without a delivery: 0 | P6: a retried call must not replay twice, and an accepted replay must send |
 | Duplicate sends (an attempt after a recorded 2xx) | Rare; measured, not assumed | The cost of at-least-once: leases and rebalances |
 | Refused endpoint addresses, by tenant | Every refusal logged | I4; a spike means someone is probing |
 | "Never received" tickets per week | Down from about 15, each answered from the log | The business reason for the platform |
@@ -335,6 +365,11 @@ From "producers send" to the platform, one tenant at a time:
 -- I1: deliveries past the 3-day retry window that never finished (must return no rows)
 SELECT id, endpoint_id, state FROM delivery
 WHERE created_at < now() - interval '3 days 1 hour' AND state NOT IN ('DELIVERED', 'DEAD');
+
+-- P6: accepted replay requests that queued no delivery (must return no rows)
+SELECT r.id FROM replay_request r
+LEFT JOIN delivery d ON d.event_id = r.event_id AND d.endpoint_id = r.endpoint_id AND d.replay_id = r.id
+WHERE d.id IS NULL;
 
 -- P3, per endpoint: queued work older than 5 seconds (healthy endpoints should never appear here)
 SELECT endpoint_id, now() - min(created_at) AS oldest FROM delivery
@@ -368,7 +403,7 @@ They stop paying for an endpoint that's known to be down. With fair queues alone
 <details>
 <summary><b>Q4. 🟣 What do you tell receivers about duplicates and ordering?</b></summary>
 
-Duplicates will happen: a lost response, an expired lease or a rebalance causes a resend with the same `webhook-id`. So: verify the signature, keep seen IDs for at least the retry window (three days here), reply 2xx quickly and process afterwards. Order isn't guaranteed, because retries reorder events. Each payload carries a per-resource sequence number, so receivers can ignore stale updates, and receivers that need the current state should fetch it through the API, treating the webhook as a hint.
+Duplicates will happen: a lost response, an expired lease or a rebalance causes a resend with the same `webhook-id`. So: verify the signature, keep seen IDs for at least the retry window (three days here), reply 2xx quickly and process afterwards. A replay isn't a duplicate: it arrives with a new `webhook-id` and the same `event_id`, because the tenant asked to see the event again, so receivers whose processing isn't idempotent per event should also check the `event_id`. Order isn't guaranteed, because retries reorder events. Each payload carries a per-resource sequence number, so receivers can ignore stale updates, and receivers that need the current state should fetch it through the API, treating the webhook as a hint.
 </details>
 
 <details>
@@ -387,6 +422,12 @@ Make duplicates harmless first, then switch. Stage 1 adds a `webhook-id` derived
 <summary><b>Q7. 🔵 A large tenant says an event never arrived. How do you answer, and what must exist before you can?</b></summary>
 
 Answer from the delivery log: every attempt, with its time, the address we connected to, the status code and the latency. If there's a 2xx, show it, with the `webhook-id` they can search their own logs for. If it failed, show why and offer a replay. That needs an attempt log, kept at least as long as tenants can raise a ticket, and a replay API. Build both before the first escalation, because "we think it was sent" doesn't end the conversation.
+</details>
+
+<details>
+<summary><b>Q8. 🟣 A tenant replays an event; the call times out and their client retries it. How do you deliver exactly one replay, distinct from the original?</b></summary>
+
+Make the replay a request with its own identity. The call carries an `Idempotency-Key`, claimed as a `replay_request` row unique on (tenant, key), and the new delivery is written in the same transaction with that row's ID as its replay ID. Deliveries are unique on (event, endpoint, replay ID), so fan-out's dedupe still holds for the original (replay ID 0), and the replay's `webhook-id` is derived from (event, endpoint, replay ID), new to the receiver but stable across the replay's own retries. In the PostgreSQL lab, the old (event, endpoint) constraint silently swallowed both replays; with the replay ID, two replays made two deliveries; eleven retries of one call made one, and without a key they made eleven.
 </details>
 
 ---

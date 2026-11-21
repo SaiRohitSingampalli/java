@@ -33,7 +33,7 @@
 - [Part X · Specialist Topics](#part-x--specialist-topics) (Q124–Q136)
 - [Part XI · Practice Lab](#part-xi--practice-lab) (Q137–Q143)
 - [Part XII · Data & AI](#part-xii--data--ai) (Q144–Q159)
-- [Part XIII · Design Reviews & Practice](#part-xiii--design-reviews--practice) (Q160–Q172)
+- [Part XIII · Design Reviews & Practice](#part-xiii--design-reviews--practice) (Q160–Q178)
 
 ---
 
@@ -1043,13 +1043,13 @@ Plain unit tests for everything around the model (tools, parsers, guardrails, po
 <details>
 <summary><b>Q160. 🟣 Why claim a payment operation before calling the PSP, instead of saving the response afterwards?</b></summary>
 
-Because a unique constraint only protects what happens after it fires. Saved afterwards, two concurrent retries both find nothing and both charge, and a crash between the charge and the save leaves no record at all. In the lab, check-then-save charged 1,000 of 1,000 concurrent duplicate checkouts twice; claiming first charged each once, and the duplicates got a `409` and then the replayed result. → [Ch 36](36-case-study-payments.md)
+Because a unique constraint only protects what happens after it fires. Saved afterwards, two concurrent retries both find nothing and both charge, and a crash between the charge and the save leaves no record at all. In the lab, check-then-save charged almost every one of 1,000 concurrent duplicate checkouts more than once (999 in the run shown); claiming first charged each once, and the duplicates got a `409` and then the replayed result. → [Ch 36](36-case-study-payments.md)
 </details>
 
 <details>
 <summary><b>Q161. 🟣 A PSP call times out. What do you do, and what changes after a day?</b></summary>
 
-Record the outcome as unknown, not failed, and tell the client it's processing (`202`). Re-send with the same idempotency key, which is the operation's own ID, while the PSP still keeps it; Stripe may prune keys after 24 hours, so a reconciler re-sends within 23. After that, look the payment up by your reference instead of re-sending. Never use a new key until you know the first attempt failed. → [Ch 36](36-case-study-payments.md)
+Record the outcome as unknown, not failed, and tell the client it's processing (`202`). Re-send with the same idempotency key, which is the operation's own ID, while the PSP still keeps it; Stripe may prune keys after 24 hours, so a reconciler re-sends within 23. After that, look the payment up by your reference instead of re-sending, and treat an empty search as "not known yet", never as "not charged". Never use a new key until you know the first attempt failed. → [Ch 36](36-case-study-payments.md)
 </details>
 
 <details>
@@ -1103,7 +1103,7 @@ Allow only global unicast addresses, checked after resolving, and connect to the
 <details>
 <summary><b>Q170. 🟣 Under overload, unbounded virtual threads did worse than a platform pool. Why?</b></summary>
 
-The bottleneck was 20 database connections. The pool's 200 threads accidentally limited the queue; virtual threads removed that limit, so answers came back after callers had given up (234 answered in time per second and 2,320 wasted queries, against 445 for the pool). A bulkhead of 20 plus deadline checks answered 671 per second, the database's capacity, with a p99 of 81 ms. → [Ch 39 §3](39-staff-artefact-exercises.md#3-worked-through-virtual-threads-for-a-catalogue-service-)
+The bottleneck was 20 database connections. The pool's 200 threads accidentally limited the queue; virtual threads removed that limit, so answers came back after callers had given up (237 answered in time per second and 2,309 wasted queries, against 454 for the pool). The limits fixed it, not the threads: a bulkhead of 20 plus deadline checks answered 671 per second on platform threads and 668 on virtual threads, the database's capacity, with a p99 of 81 ms. Judge virtual threads separately, on platform threads, pool sizing and replayed production traffic. → [Ch 39 §3](39-staff-artefact-exercises.md#3-worked-through-virtual-threads-for-a-catalogue-service-)
 </details>
 
 <details>
@@ -1116,6 +1116,42 @@ The problem with numbers, the constraint that decided it, real options including
 <summary><b>Q172. 🟣 A build-versus-buy comparison comes out 2% apart over three years. What now?</b></summary>
 
 Say it's a wash, then find what decides it. A sensitivity table shows which assumptions flip the answer (in the worked example, the vendor's price and volume growth, with a break-even near $15 per million deliveries at 40% growth), so get a real quote and agree the growth figure. Look at the yearly shape, not just the total, and let constraints such as data residency decide when cost doesn't. → [Ch 39 §7](39-staff-artefact-exercises.md#7-exercise-4-a-cost-comparison-that-counts-people-)
+</details>
+
+<details>
+<summary><b>Q173. 🟣 A failover loses a payment's row, and the client retries a day later. Why doesn't the derived operation ID save you, and what does?</b></summary>
+
+The derived ID recreates the same PSP key, which makes the retry a replay only while the PSP still remembers the key, and only at the same PSP. Stripe may prune keys after 24 hours; in the lab, a retry 26 hours after the loss charged twice. Make the claim durable first (a synchronous standby, and failover only to a standby that confirmed the commit). Journal every operation outside the database before the PSP call, with its key, amount, PSP and creation time. Then recovery re-sends only inside the key window, at that PSP; outside it, it reads (a search, then the settlement report), and it escalates when it can't establish the age or the PSP. → [Ch 36 §3](36-case-study-payments.md#3-the-proposal-)
+</details>
+
+<details>
+<summary><b>Q174. 🔴 The PSP's search finds no charge for an <code>UNKNOWN</code> payment. Is it safe to mark it not charged?</b></summary>
+
+No. Search indexes lag behind writes: Stripe documents its search as eventually consistent, usually current within a minute but up to an hour behind during outages, and says not to use it for read-after-write. In the lab, reading an empty search as "not charged" and charging again made a double charge. Keep the payment `UNKNOWN` and settle it only from an authoritative source, such as the final settlement report; escalate if that takes too long. → [Ch 36 §3](36-case-study-payments.md#3-the-proposal-)
+</details>
+
+<details>
+<summary><b>Q175. 🔵 How do you move merchants from an old idempotency table to a new design without charging anyone twice, in either direction?</b></summary>
+
+Make each version look up the other's records before it charges: the new path adopts completed old payments (response, charge ID and age), and a read shim in the old code, deployed first, answers from the new table. Switch each merchant through a drain: no old request in flight, then a backfill, then the switch. Go back the same way, letting the new reconciler settle unresolved operations first, because the old code has no reconciler. And test both directions: in the PostgreSQL lab, a switch without the lookup charged 100 payments again, and a rollback without the shim charged 101 again. → [Ch 36 §7](36-case-study-payments.md#7-migration-stages-)
+</details>
+
+<details>
+<summary><b>Q176. 🔴 Why can <code>INSERT … ON CONFLICT (merchant_id, idempotency_key) DO NOTHING</code> still fail with a unique violation?</b></summary>
+
+Because `ON CONFLICT` handles only conflicts on its arbiters, the constraints its target names. If the primary key is derived from the same key, a duplicate violates the primary key too, and a racing insert can collide there and raise an error (19 of 2,000 claims in the PostgreSQL lab). Omit the target, which makes every unique constraint an arbiter for `DO NOTHING`, or stop deriving the primary key from the key. → [Ch 36 §6.2](36-case-study-payments.md#62-against-a-real-postgresql)
+</details>
+
+<details>
+<summary><b>Q177. 🟣 Deliveries are unique on (event, endpoint), and replays are promised as new deliveries. What's wrong, and what fixes it?</b></summary>
+
+A replay keeps the event ID, so it violates the constraint, and the `ON CONFLICT DO NOTHING` that makes fan-out safe swallows it silently: in the lab, two accepted replays sent nothing. Add a replay ID to the key, 0 for fan-out's original, and make each replay a request with its own `Idempotency-Key`, unique per tenant and written in the same transaction as its delivery. The replay's `webhook-id` comes from (event, endpoint, replay ID): new to the receiver, stable across its own retries. Eleven retries of one replay call then made one delivery. → [Ch 38 §6.3](38-case-study-webhook-delivery.md#63-replays-one-delivery-per-request-not-per-event)
+</details>
+
+<details>
+<summary><b>Q178. 🟣 Why did the virtual-thread experiment need platform threads with the same bulkhead and deadlines?</b></summary>
+
+Without that control, two things changed at once, the thread model and the limits, and the experiment couldn't say which one helped. With it, platform threads answered 671 requests per second in time and virtual threads 668: the limits fixed the overload. Virtual threads then become a separate decision, judged on what they do change: 10 platform threads instead of 1,010 for 300 concurrent slow calls, no pool to size, and behaviour on replayed production traffic. → [Ch 39 §3](39-staff-artefact-exercises.md#3-worked-through-virtual-threads-for-a-catalogue-service-)
 </details>
 
 ---

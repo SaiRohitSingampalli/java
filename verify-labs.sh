@@ -13,6 +13,8 @@
 #   GUAVA_JAR      a Guava JAR, and PROTOBUF_JAR a protobuf-java JAR (Chapter 37's Unsafe probe and inventory)
 #   protoc         on the PATH, the same version as PROTOBUF_JAR (Chapter 31's ProtoDemo)
 #   REDIS_PORT     the port of a THROWAWAY Redis 7+ or Valkey server; RedisLabs flushes it
+#   PG_URL         a JDBC URL for a THROWAWAY PostgreSQL 14+ database whose name ends in _lab (the labs drop and
+#                  recreate their own schemas), and PG_JDBC_JAR the PostgreSQL JDBC driver JAR
 #   timeout        GNU timeout (or gtimeout on macOS): needed to stop the labs that hang by design
 #   VERIFY_OUT     where to keep each lab's output (default: a new folder under ${TMPDIR:-/tmp})
 #
@@ -27,7 +29,7 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --quick) quick=1; shift ;;
     --with-bench) bench=1; shift ;;
-    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     --) shift; break ;;
     -*) echo "unknown option: $1" >&2; exit 2 ;;
     *) break ;;
@@ -49,6 +51,7 @@ fi
 mkdir -p "$base"
 original_path="$PATH"
 JACKSON_CP="${JACKSON_CP:-}"; GUAVA_JAR="${GUAVA_JAR:-}"; PROTOBUF_JAR="${PROTOBUF_JAR:-}"; REDIS_PORT="${REDIS_PORT:-}"
+PG_URL="${PG_URL:-}"; PG_JDBC_JAR="${PG_JDBC_JAR:-}"
 passed=0; failed=0; skipped=0
 
 missing_need() {   # prints why a lab can't run here (the first missing dependency), or nothing
@@ -60,6 +63,7 @@ missing_need() {   # prints why a lab can't run here (the first missing dependen
       unsafe-libs) { [ -n "$GUAVA_JAR" ] && [ -n "$PROTOBUF_JAR" ]; } || { echo "no Guava/protobuf JARs"; return; } ;;
       protoc) { command -v protoc >/dev/null 2>&1 && [ -n "$PROTOBUF_JAR" ]; } || { echo "no protoc/PROTOBUF_JAR"; return; } ;;
       redis) [ -n "$REDIS_PORT" ] || { echo "no REDIS_PORT"; return; } ;;
+      postgres) { [ -n "$PG_URL" ] && [ -n "$PG_JDBC_JAR" ]; } || { echo "no PG_URL/PG_JDBC_JAR"; return; } ;;
       timeout) [ -n "$timeout_cmd" ] || { echo "no timeout command"; return; } ;;
       slow) [ "$quick" -eq 0 ] || { echo "slow: --quick"; return; } ;;
     esac
@@ -122,6 +126,7 @@ all_labs() {
   lab "21 Hot (JFR recording)"                   0 120 21 -        java -XX:StartFlightRecording=duration=30s,filename="$w/hot.jfr",settings=profile Hot.java
   lab "21 jfr view hot-methods"                  0  60 21 -        jfr view hot-methods "$w/hot.jfr"
   lab "23/36 PaymentIdempotency (self-checking)" 0 120 21 -        java PaymentIdempotency.java
+  lab "36 PaymentsPostgres (self-checking)"      0 300 21 postgres java -cp "$PG_JDBC_JAR" PaymentsPostgres.java "$PG_URL"
   lab "24 Ring"                                  0  60 21 -        java Ring.java
   lab "24 ShortCodes (self-checking)"            0  60 21 -        java ShortCodes.java
   lab "26 Patterns (self-checking)"              0  60 21 -        java Patterns.java
@@ -163,6 +168,7 @@ all_labs() {
   lab "37 CanaryGate"                            0 120 21 -        java CanaryGate.java
   lab "38 WebhookFairness (self-checking)"       0 120 21 -        java WebhookFairness.java
   lab "38 WebhookSigning (self-checking)"        0  60 21 -        java WebhookSigning.java
+  lab "38 WebhookReplayPostgres (self-checking)" 0 120 21 postgres java -cp "$PG_JDBC_JAR" WebhookReplayPostgres.java "$PG_URL"
   lab "39 VtDecision"                            0 180 21 slow     java VtDecision.java
   lab "39 CostModel"                             0  60 21 -        java CostModel.java
 }

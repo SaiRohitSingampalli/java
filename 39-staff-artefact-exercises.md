@@ -72,48 +72,74 @@ Part 6 is the one most often skipped, and the one that carries the most weight. 
 **3. Options.**
 - A. Keep the platform pool and tune its queue.
 - B. Virtual threads, no other change (the proposal).
-- C. Virtual threads, plus a **bulkhead** of 20 permits (a semaphore matching the connection pool, waiting at most 50 ms) and **deadlines** (skip work whose caller has already given up).
-- D. Cache the hottest products. It complements A–C rather than replacing them.
-- E. A reactive rewrite ([Chapter 29](29-reactive-java-reactor-webflux.md)): months of work for the same database.
-- F. A read replica: the real capacity fix, but next quarter.
+- C. Keep the platform pool, and add a **bulkhead** of 20 permits (a semaphore matching the connection pool, waiting at most 50 ms) and **deadlines** (skip work whose caller has already given up).
+- D. Virtual threads with the same bulkhead and deadlines.
+- E. Cache the hottest products. It complements A–D rather than replacing them.
+- F. A reactive rewrite ([Chapter 29](29-reactive-java-reactor-webflux.md)): months of work for the same database.
+- G. A read replica: the real capacity fix, but next quarter.
 
-**4. Decision.** C now, D next. The database is the bottleneck, and no thread model makes 20 connections answer more than about 666 queries a second. What we *can* choose is what happens to the excess: wait in a queue until the caller has gone (A and B), or refuse quickly so the front end can fall back to cached data (C). We give up: at 1.5× load, about a third of requests fail fast instead of eventually succeeding for some of them.
+**4. Decision.** C now, E next, and virtual threads as a decision of their own. The database is the bottleneck, and no thread model makes 20 connections answer more than about 666 queries a second. What we *can* choose is what happens to the excess: wait in a queue until the caller has gone (A and B), or refuse quickly so the front end can fall back to cached data (C and D). C and D perform the same in the experiment, so fixing the incident doesn't need a new thread model, and C changes less of what's running. We give up: at 1.5× load, about a third of requests fail fast instead of eventually succeeding for some of them.
 
-**5. Experiment.** `VtDecision` runs all three designs with real threads against a simulated database (20 connections × 30 ms), first at normal load, then at 1.5× capacity.
+**5. Experiment.** `VtDecision` runs A to D with real threads against a simulated database (20 connections × 30 ms), first at normal load, then at 1.5× capacity. C is the **control** for D: they differ only in the thread model, so comparing them shows what the threads contribute. Part 2 of the lab then measures a workload where the thread model does matter.
 
 **6. Acceptance criteria**, written before the run: at 1.5× capacity, the p99 of answered requests ≤ 200 ms; fewer than 1% of callers time out; fewer than 1% of queries run for callers who've gone; every failure returns within 100 ms.
 ```
-Database: 20 connections x 30 ms per query (about 666 answers/s). Callers give up after 500 ms.
+Part 1. Database: 20 connections x 30 ms per query (about 666 answers/s). Callers give up after 500 ms.
 Acceptance criteria at 1.5x capacity: p99 of answered requests <= 200 ms, under 1% of callers time out,
 under 1% of queries run for callers who have gone, and every failure comes back within 100 ms.
 
 Normal load: 400 requests/s for 4 s
-   design                                          answered  p50 / p99 (ms)     fast     slow  callers  wasted   peak meets
-                                                  in time/s     of answered failures failures  gave up queries in flight criteria
-   platform pool: 200 threads, queue of 1,000           400      30 /    32        0        0        0       0     14
-   virtual threads, no limits                           400      30 /    32        0        0        0       0     15
-   virtual threads + bulkhead of 20 + deadlines         400      30 /    31        0        0        0       0     14
+   design                                          answered  p50 / p99 (ms)     fast     slow  callers  wasted      peak  platform
+                                                  in time/s     of answered failures failures  gave up queries in flight   threads
+   platform pool: 200 threads, queue of 1,000           400      30 /    31        0        0        0       0        14       206
+   virtual threads, no limits                           400      30 /    34        0        0        0       0        19        10
+   platform pool + bulkhead of 20 + deadlines           400      30 /    31        0        0        0       0        15       210
+   virtual threads + bulkhead of 20 + deadlines         400      30 /    32        0        0        0       0        17        10
 
 Overload (1.5x capacity): 1,000 requests/s for 4 s
-   design                                          answered  p50 / p99 (ms)     fast     slow  callers  wasted   peak meets
-                                                  in time/s     of answered failures failures  gave up queries in flight criteria
-   platform pool: 200 threads, queue of 1,000           445     262 /   498        0      554    2,221   1,608    939 no
-   virtual threads, no limits                           234     248 /   499        0      684    3,065   2,320  1,018 no
-   virtual threads + bulkhead of 20 + deadlines         671      79 /    81    1,316        0        0       0     75 yes
+   design                                          answered  p50 / p99 (ms)     fast     slow  callers  wasted      peak  platform meets
+                                                  in time/s     of answered failures failures  gave up queries in flight   threads criteria
+   platform pool: 200 threads, queue of 1,000           454     252 /   494        0      589    2,185   1,540       906       210 no
+   virtual threads, no limits                           237     253 /   493        0      683    3,051   2,309     1,015        10 no
+   platform pool + bulkhead of 20 + deadlines           671      79 /    81    1,317        0        0       0        71       210 yes
+   virtual threads + bulkhead of 20 + deadlines         668      75 /    81    1,328        0        0       0        95        10 yes
+
+Part 2. Where the thread model matters: each request waits 300 ms on a slow downstream service, and nothing
+else limits them, so at 1,000 requests/s about 300 are waiting at any moment.
+
+Load: 1,000 requests/s for 4 s
+   design                                          answered  p50 / p99 (ms)     fast     slow  callers  wasted      peak  platform
+                                                  in time/s     of answered failures failures  gave up   calls in flight   threads
+   platform pool: 200 threads, queue of 1,000           100     400 /   401      305        0    3,295   2,695     1,201       210
+   platform pool: 1,000 threads, queue of 1,000       1,000     300 /   310        0        0        0       0       316     1,010
+   virtual threads, no limits                         1,000     300 /   301        0        0        0       0       304        10
 ```
-(JDK 25 on two vCPUs. The lab uses real threads and real time, so the numbers move from run to run and machine to machine; on JDK 21 the three overload rows answered 436, 236 and 670 per second. The pattern holds.)
+(JDK 25 on two vCPUs. The lab uses real threads and real time, so the numbers move from run to run and machine to machine; on JDK 21 the four overload rows answered 458, 235, 671 and 671 per second. The pattern holds.)
 
 What it shows:
 - **At normal load the designs are indistinguishable.** A test at normal load can't tell you anything about this decision.
-- **Under overload, unbounded virtual threads are the *worst* design.** Removing the thread limit removed the only thing that limited the queue in front of the database. Answers arrive after callers have left: 2,320 queries ran for nobody, and only 234 requests per second were answered in time.
-- **The platform pool is better only by accident.** Its 200 threads cap the queue, but 1,608 queries still ran for callers who'd gone.
-- **The bulkhead and deadlines answer 671 per second in time**, which is the database's capacity, with a p99 of 81 ms, no wasted queries and 75 requests in flight. The excess, a third of requests, comes back as fast failures the front end can serve from its cache. The decision's cost, stated in part 4, shows up here as 1,316 fast failures.
+- **Under overload, unbounded virtual threads are the *worst* design.** Removing the thread limit removed the only thing that limited the queue in front of the database. Answers arrive after callers have left: 2,309 queries ran for nobody, and only 237 requests per second were answered in time.
+- **The platform pool is better only by accident.** Its 200 threads cap the queue, but 1,540 queries still ran for callers who'd gone.
+- **The limits do the work, whichever threads run them.** C and D answer 671 and 668 requests per second in time, which is the database's capacity, with a p99 of 81 ms, no wasted queries and fewer than 100 requests in flight. The excess, a third of requests, comes back as fast failures the front end can serve from its cache: that's the cost stated in part 4, about 1,320 fast failures. The only column where C and D differ is platform threads, 210 against 10.
+- **Part 2 is where the thread model matters.** When each request waits 300 ms on a downstream service and nothing else limits them, about 300 are waiting at any moment (Little's law: 1,000 a second × 0.3 s). A pool of 200 threads can finish at most about 666 a second, so its queue fills: 100 answered in time per second, 305 rejected, and 2,695 downstream calls made for callers who had gone. A pool of 1,000 keeps up using 1,010 platform threads; virtual threads keep up using 10.
 
-**7. Delivery.** A flag selects the design, per instance. Canary at 5%, gated on request counts as in [Chapter 37 §8](37-case-study-fleet-jdk-upgrade.md#8-rollout-gates-with-evidence-). A load test at 1.5× in pre-production runs before the canary. New metrics: permits in use, bulkhead wait time, rejections, deadline skips. The front-end team owns the fallback (serve cached product data on a `503`, and honour `Retry-After`); the catalogue team owns the rest. Rollback is the flag, and nothing here is one-way.
+> 💣 **Change one thing at a time.** Without the control (C), the comparison changes two things at once, the thread model and the limits, and can't say which helped; it's easy to credit the fashionable one. When an option bundles changes, add a row that keeps all but one of them fixed.
 
-**8. Reconsideration.** Reopen it if the connection pool changes (permits must match it), if rejections exceed 1% at normal load, or if the database's p99 rises above 50 ms (the bulkhead's wait budget). Look again after the next sale, in a follow-up memo (§8).
+**Virtual threads, judged on their own.** With the overload fix settled, the thread model is a separate question, with its own criteria:
 
-> 🧠 **Staff lens:** "use virtual threads" sounds like a capacity decision; it's a *queueing* decision ([Chapter 12 §12](12-concurrency-advanced-juc-loom.md#12-virtual-threads-project-loom-), [Chapter 27 §8](27-staff-architect-interview-playbook.md#8-virtual-threads-vs-reactive-a-decision-framework-)). The eight parts force that out: the constraint (20 connections) decides it, and the criteria, fixed in advance, catch the design that looks like progress.
+| Question | What the lab shows | For the catalogue service |
+|---|---|---|
+| Resource use | 10 platform threads instead of 210 (part 1) or 1,010 (part 2). Each platform thread is an OS thread, and on Linux x86-64 the JVM reserves 1 MB of address space for its stack by default (`ThreadStackSize`; see `java -XX:+PrintFlagsFinal -version`). A virtual thread keeps its frames in the garbage-collected heap instead ([JEP 444](https://openjdk.org/jeps/444)) | A small gain: about 200 Tomcat threads, few of them busy at once behind a 20-permit bulkhead |
+| Simplicity | Part 2's pool had to be sized to rate × latency and failed when it was too small; virtual threads needed no size. Blocking code stays as it is, with no reactive rewrite | No pool to size, but check for pinning (`synchronized` pins on JDK 21–23, fixed in JDK 24 by [JEP 491](https://openjdk.org/jeps/491)), `ThreadLocal` caches sized for 200 threads, and libraries that assume a small pool ([Chapter 12 §12](12-concurrency-advanced-juc-loom.md#12-virtual-threads-project-loom-)) |
+| Representative workloads | A synthetic workload shows the shape, not your service | Replay a day of production traffic, sale peak included, through both thread models; compare p99, CPU, heap and platform threads |
+
+The verdict for the catalogue service is *not now*. Its requests make one short query behind a bulkhead, so few are ever waiting and the gain is small. Revisit with the JDK 25 upgrade ([Chapter 37](37-case-study-fleet-jdk-upgrade.md)), where `synchronized` no longer pins, as a record of its own with its own criteria. Services shaped like part 2, with many slow waits and nothing smaller limiting them, are the better first candidates.
+
+**7. Delivery.** A flag turns the bulkhead and deadlines on, per instance. Canary at 5%, gated on request counts as in [Chapter 37 §8](37-case-study-fleet-jdk-upgrade.md#8-rollout-gates-with-evidence-). A load test at 1.5× in pre-production runs before the canary. New metrics: permits in use, bulkhead wait time, rejections, deadline skips. The front-end team owns the fallback (serve cached product data on a `503`, and honour `Retry-After`); the catalogue team owns the rest. Rollback is the flag, and nothing here is one-way.
+
+**8. Reconsideration.** Reopen it if the connection pool changes (permits must match it), if rejections exceed 1% at normal load, or if the database's p99 rises above 50 ms (the bulkhead's wait budget). Look again after the next sale, in a follow-up memo (§8). A later move to virtual threads doesn't reopen this record: the limits stay whichever threads run them.
+
+> 🧠 **Staff lens:** "use virtual threads" sounds like a capacity decision; it's a *queueing* decision ([Chapter 12 §12](12-concurrency-advanced-juc-loom.md#12-virtual-threads-project-loom-), [Chapter 27 §8](27-staff-architect-interview-playbook.md#8-virtual-threads-vs-reactive-a-decision-framework-)). The eight parts force that out: the constraint (20 connections) decides it, the criteria, fixed in advance, catch the design that looks like progress, and the control shows which change did the work.
 
 ---
 
@@ -293,15 +319,15 @@ What people leave out of cost comparisons: on-call and incident time, the engine
 
 > **Follow-up: bulkhead and deadlines for the catalogue service, 90 days on**
 >
-> **Decided** (October): virtual threads with a 20-permit bulkhead and deadlines, plus a cached fallback in the front end (§3). **Criteria** at 1.5× capacity: p99 of answered requests ≤ 200 ms, timeouts < 1%, wasted queries < 1%, every failure within 100 ms.
+> **Decided** (October): a 20-permit bulkhead and deadlines on the existing platform threads, plus a cached fallback in the front end (§3). Virtual threads were left to a decision of their own. **Criteria** at 1.5× capacity: p99 of answered requests ≤ 200 ms, timeouts < 1%, wasted queries < 1%, every failure within 100 ms.
 >
 > **What happened** in the January sale (peak at about 1.4× database capacity for 25 minutes): answered p99 of 85 ms; 27% of requests failed fast at the peak and were served from the front end's cache; timeouts 0.2%; wasted queries too few to measure. Sources: the sale dashboard and the load-test reports, both linked.
 >
 > **What surprised us.** The front end retried every `503` immediately, which tripled the load on the bulkhead for the first four minutes. We fixed it during the sale by honouring `Retry-After` and adding a retry budget, and a test now covers it. We also had no bulkhead wait-time histogram at launch, so the first diagnosis took longer than it should have.
 >
-> **Would we decide the same?** Yes. The cache (option D) comes next quarter, because a third of peak traffic falling back to it shows how much it's worth. The criteria stand; we've added one for retry amplification.
+> **Would we decide the same?** Yes. The cache (option E) comes next quarter, because a third of peak traffic falling back to it shows how much it's worth. The criteria stand; we've added one for retry amplification.
 >
-> **Reopen if** the read replica (option F) lands, since the permits must then change, or if rejections pass 1% at normal load.
+> **Reopen if** the read replica (option G) lands, since the permits must then change, or if rejections pass 1% at normal load.
 
 **What a reviewer looks for:**
 
@@ -387,13 +413,19 @@ Say it's a wash, then show what decides it. A sensitivity table finds the assump
 <details>
 <summary><b>Q6. 🟣 In the experiment, unbounded virtual threads did worse under overload than a platform pool. Why?</b></summary>
 
-The bottleneck was 20 database connections. The platform pool's 200 threads accidentally limited how much work queued in front of them; virtual threads removed that limit, so far more requests waited for a connection, answers arrived after callers had given up, and the database spent its capacity on queries for nobody (234 answered in time per second, 2,320 wasted queries). Virtual threads make waiting cheap; they don't add capacity. The fix is to bound concurrency at the bottleneck (a bulkhead) and drop work whose deadline has passed, which answered at the database's full capacity.
+The bottleneck was 20 database connections. The platform pool's 200 threads accidentally limited how much work queued in front of them; virtual threads removed that limit, so far more requests waited for a connection, answers arrived after callers had given up, and the database spent its capacity on queries for nobody (237 answered in time per second, 2,309 wasted queries). Virtual threads make waiting cheap; they don't add capacity. The fix is to bound concurrency at the bottleneck (a bulkhead) and drop work whose deadline has passed. With those limits, platform threads and virtual threads both answered at the database's full capacity, 671 and 668 per second.
 </details>
 
 <details>
 <summary><b>Q7. 🔵 Why keep an evidence log, and what makes an entry useful in an interview?</b></summary>
 
 Because interviews probe specific decisions until they hold or crack, and memory reconstructs. A useful entry has a date, the decision, who challenged it and how, what changed as a result, a measured outcome with a source, and what you learned. The "challenged" and "changed" columns carry the most signal at staff level, because they show influence and judgement. Keep only real entries, mark anything else as practice, and fill in outcomes later with a follow-up memo.
+</details>
+
+<details>
+<summary><b>Q8. 🟣 Why does the experiment include platform threads with the same bulkhead and deadlines?</b></summary>
+
+It's the control. Comparing unlimited platform threads with limited virtual threads changes two things at once, so it can't say whether the gain came from the threads or from the limits. The control row settles it: platform threads with the same limits answered 671 per second, virtual threads 668, so the limits fixed the overload. That turns one decision into two: ship the limits now, and judge virtual threads on what they do change (platform threads, pool sizing, behaviour on replayed production traffic), measured on a workload where the thread model matters, like the lab's part 2.
 </details>
 
 ---

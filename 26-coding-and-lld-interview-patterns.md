@@ -752,6 +752,7 @@ static final class SimpleThreadPool implements AutoCloseable {
     @Override public void close() throws InterruptedException { shutdown(); awaitTermination(1, TimeUnit.MINUTES); }
 }
 ```
+<!-- lab-output: ConcurrencyProblems.java -->
 ```
 thread pool ran 1000 of 1000 tasks
 full queue -> queue is full
@@ -932,6 +933,7 @@ public final class TtlCache<K, V> {
     }
 }
 ```
+<!-- lab-output: LowLevelDesigns.java -->
 ```
 TTL t=31s: session:1=Optional.empty session:2=Optional[bob]
 TTL t=91s: swept=1 size=0
@@ -1045,6 +1047,7 @@ final class ParkingLot {
 }
 ```
 Tested with 1,000 cars parked concurrently from 8 threads into 300 medium + 200 large spots, plus a fake clock for pricing:
+<!-- lab-output: LowLevelDesigns.java -->
 ```
 parking: issued=500 turnedAway=500 duplicateSpots=0
 61 minutes in a MEDIUM spot -> 800 cents

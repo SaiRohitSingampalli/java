@@ -1,3 +1,12 @@
+/*
+ * Lab:       Consistent hashing vs hash % N: balance, and how many keys move when a node joins
+ * Chapters:  24 (system design)
+ * Run:       java Ring.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Karger et al., Consistent Hashing and Random Trees (STOC 1997)
+ * Output:    deterministic.
+ */
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

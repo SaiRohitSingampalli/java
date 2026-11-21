@@ -4,6 +4,15 @@
 
 > *Performance work has one rule that beats every other: **measure, don't guess.** Even engineers with years of profiling behind them usually guess the hotspot wrong. The difference with experience is that they know it, and they reach for a profiler first.*
 
+> [!TIP]
+> **🧭 Decision guide: when and where to optimise**
+> - **When it matters:** when a stated goal for latency, throughput or cost is missed; not on a hunch.
+> - **Default:** write the goal down, reproduce it under realistic load, profile with JFR or async-profiler before changing anything, fix the architecture first (round trips, data access, caching), then the code, one change at a time.
+> - **Alternatives:** more capacity when it costs less than the engineering time; micro-optimisation for proven hot loops; JMH for library code.
+> - **Failure modes:** coordinated omission in load tests, averages hiding the tail, optimising code off the critical path, fan-out amplifying tail latency.
+> - **Evidence that would change it:** a profile and a load test that agree about where the time goes.
+> - **Argued in:** §1–§6 and §12–§13.
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-21--performance-and-troubleshooting)
 
 ---
@@ -431,7 +440,7 @@ Speedup is limited by the serial fraction: 1/((1−p) + p/N). If 10% of each req
 </details>
 
 <details>
-<summary><b>Q10. 🟣 How would you set up performance guardrails for a large engineering organisation?</b></summary>
+<summary><b>Q10. 🔵 How would you set up performance guardrails for a large engineering organisation?</b></summary>
 
 SLOs with per-hop latency budgets and timeouts. Continuous profiling and JFR on in production. Dashboards built on USE and RED. Nightly or pre-release load tests with an open workload model and trend tracking. JMH for performance-critical libraries. Query-count and allocation assertions in integration tests. Capacity models per service with known per-instance knees. Cost per request as a tracked metric. And a norm that performance work starts with a profile and ends with a measured, documented result.
 </details>

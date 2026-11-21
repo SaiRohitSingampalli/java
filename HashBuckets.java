@@ -1,3 +1,12 @@
+/*
+ * Lab:       Colliding hash codes, HashMap's bit spreading and the bucket index
+ * Chapters:  06 (collections)
+ * Run:       java HashBuckets.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   OpenJDK source: java.util.HashMap.hash()
+ * Output:    deterministic.
+ */
 public class HashBuckets {
     public static void main(String[] args) {
         for (String key : new String[]{"Aa", "BB", "C3", "id"}) {

@@ -1,3 +1,13 @@
+/*
+ * Lab:       A small Jackson + HTTP service whose startup the Chapter 30 benchmark measures
+ * Chapters:  30 (startup and footprint)
+ * Run:       JDK21=<jdk 21 home> JDK25=<jdk 25 home> JACKSON_CP=<jars> python3 startup-bench.py
+ *            or on its own: java -cp "$JACKSON_CP" StartupApp.java
+ * Needs:     JDK 21 or newer; Jackson 2.12+ (jackson-databind, jackson-core, jackson-annotations)
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 341 (default CDS archives), JEP 350 (dynamic CDS), JEP 483, 514 and 515 (the AOT cache)
+ * Output:    timings vary by machine; compare configurations, not absolute numbers.
+ */
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import java.io.StringWriter;

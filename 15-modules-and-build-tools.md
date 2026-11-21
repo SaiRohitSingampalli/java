@@ -4,6 +4,15 @@
 
 > *Nobody gets promoted for their `pom.xml`. Plenty of outages start in one, though: a transitive version flip, a shaded copy of a vulnerable library, a build that isn't reproducible. At staff level, the build is architecture.*
 
+> [!TIP]
+> **🧭 Decision guide: build tooling, module boundaries and dependency policy**
+> - **When it matters:** once you have more than a handful of services or libraries, slow builds, painful upgrades, or supply-chain requirements.
+> - **Default:** whichever of Maven and Gradle your organisation already standardises on; an organisation-wide BOM with convention plugins or a parent POM; `--release` set; dependency convergence enforced; an SBOM per artifact; module boundaries enforced with build modules or ArchUnit rather than JPMS in applications.
+> - **Alternatives:** JPMS for libraries and `jlink` runtimes; Gradle with a remote build cache for very large builds; Bazel for polyglot monorepos.
+> - **Failure modes:** version conflicts that surface at runtime as `NoSuchMethodError`, split packages, unpinned versions, yearly "upgrade projects" instead of a monthly rhythm.
+> - **Evidence that would change it:** build times and cache hit rates, dependency-conflict incidents, and how long it takes to ship a CVE fix to every service.
+> - **Argued in:** §3 and §6–§11; [Chapter 37](37-case-study-fleet-jdk-upgrade.md) applies it to a fleet-wide JDK upgrade.
+
 ---
 
 ## Table of contents
@@ -417,7 +426,7 @@ Use `jdeps --print-module-deps` to compute the required JDK modules, `jlink` the
 </details>
 
 <details>
-<summary><b>Q10. 🟣 How do you make builds reproducible and supply-chain-safe across an organisation?</b></summary>
+<summary><b>Q10. 🔵 How do you make builds reproducible and supply-chain-safe across an organisation?</b></summary>
 
 Pinned tool versions (wrappers with checksums, toolchains), pinned dependencies (no dynamic versions; lockfiles), reproducible archive settings, a single internal artifact proxy, dependency checksum and signature verification, SBOM generation per artifact, provenance and signing (SLSA, Sigstore), vulnerability scanning with policy gates, and automated update PRs. Pair this with the ability to rebuild and redeploy the whole fleet quickly when a critical CVE lands.
 </details>

@@ -1,3 +1,12 @@
+/*
+ * Lab:       Redis Cluster key-to-slot mapping, and hash tags
+ * Chapters:  34 (data stores)
+ * Run:       java HashSlots.java    (optionally with a cluster-enabled server's port: java HashSlots.java 7000)
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Redis Cluster specification: key distribution model (CRC16, 16,384 slots, hash tags)
+ * Output:    deterministic. Checks its CRC16 against the specification's test vector first.
+ */
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;

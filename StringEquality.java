@@ -1,3 +1,12 @@
+/*
+ * Lab:       String identity: pooling, constant folding and intern()
+ * Chapters:  03 (strings)
+ * Run:       java StringEquality.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JLS §3.10.5 (string literals), §4.12.4 (constant variables), §15.29 (constant expressions)
+ * Output:    deterministic.
+ */
 public class StringEquality {
     static final String FINAL_PART = "hel";            // constant variable
 

@@ -1,3 +1,12 @@
+/*
+ * Lab:       Low-level design solutions: LRU and TTL caches, a parking lot, an elevator, a pub-sub broker
+ * Chapters:  26 (coding and LLD)
+ * Run:       java LowLevelDesigns.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   none: classic problems
+ * Output:    deterministic.
+ */
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;

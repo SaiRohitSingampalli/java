@@ -1,3 +1,12 @@
+/*
+ * Lab:       A lock-ordering deadlock between two transfers
+ * Chapters:  11 (concurrency foundations)
+ * Run:       java Deadlock.java, then in another terminal: jcmd (lists JVMs) and jcmd <pid> Thread.print
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JLS §17.1 (synchronisation); the jcmd manual
+ * Output:    hangs by design (that's the deadlock). Stop it with Ctrl+C.
+ */
 public class Deadlock {
     static final class Account {
         final String id; long balance;

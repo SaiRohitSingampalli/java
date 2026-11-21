@@ -1,3 +1,12 @@
+/*
+ * Lab:       count++ from two threads loses updates
+ * Chapters:  11 (concurrency foundations)
+ * Run:       java LostUpdate.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JLS §17.4 (the memory model)
+ * Output:    varies from run to run: it's a data race. Run it a few times.
+ */
 public class LostUpdate {
     static int count = 0;
     public static void main(String[] args) throws InterruptedException {

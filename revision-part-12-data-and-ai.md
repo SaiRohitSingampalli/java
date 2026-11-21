@@ -1,4 +1,4 @@
-[⬅️ Prev: Part XI](revision-part-11-practice-lab.md) · [📋 Revision index](revision.md)
+[⬅️ Prev: Part XI](revision-part-11-practice-lab.md) · [📋 Revision index](revision.md) · [Next: Part XIII · Design Reviews & Practice ➡️](revision-part-13-design-reviews-and-practice.md)
 
 # Part XII · Data & AI — revision sheet
 *Chapters [34 · Data Stores: Redis, Cassandra & DynamoDB](34-data-stores-redis-cassandra-dynamodb.md) · [35 · AI Features in Java: Spring AI, LangChain4j, RAG & Guardrails](35-ai-features-spring-ai-langchain4j-rag.md)*
@@ -67,4 +67,4 @@
 
 ---
 
-[⬅️ Prev: Part XI](revision-part-11-practice-lab.md) · [📋 Revision index](revision.md)
+[⬅️ Prev: Part XI](revision-part-11-practice-lab.md) · [📋 Revision index](revision.md) · [Next: Part XIII · Design Reviews & Practice ➡️](revision-part-13-design-reviews-and-practice.md)

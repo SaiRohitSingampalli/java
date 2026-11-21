@@ -4,6 +4,15 @@
 
 > *The database outlives every service built on top of it. The most expensive bugs I know of are data bugs: lost updates, phantom double-bookings, an N+1 query that only shows up at month-end volume. This chapter is about the rules that prevent them.*
 
+> [!TIP]
+> **🧭 Decision guide: JPA or SQL, which isolation level, and which locking**
+> - **When it matters:** in every service that owns relational data.
+> - **Default:** JPA for aggregate-shaped writes, with Open Session in View off, every association `LAZY` and DTO projections for reads; JDBC or jOOQ for reporting and bulk work; Read Committed plus optimistic locking (`@Version`) for contended updates; short transactions with no remote calls inside.
+> - **Alternatives:** Serializable with retries for invariants that span rows; pessimistic locks or `SKIP LOCKED` for work queues; no ORM at all for SQL-heavy services.
+> - **Failure modes:** N+1 queries, write skew under snapshot isolation, pool exhaustion from long transactions, migrations that lock busy tables.
+> - **Evidence that would change it:** queries per request, lock waits and deadlocks, a write-skew anomaly reproduced in a test.
+> - **Argued in:** §2–§5, §8 and §12–§13.
+
 ---
 
 ## Table of contents

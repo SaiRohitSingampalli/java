@@ -416,7 +416,7 @@ Value classes are worth understanding even before they ship. They're why wrapper
 
 ---
 
-## 10. Migration playbook: 8 → 11 → 17 → 21 → 25 🟣
+## 10. Migration playbook: 8 → 11 → 17 → 21 → 25 🟣→🔵
 
 | Hop | What breaks | Fix |
 |---|---|---|
@@ -487,7 +487,7 @@ Compact object headers are on by default (JEP 534), so heap usage per object dro
 </details>
 
 <details>
-<summary><b>Q10. 🟣 How would you justify upgrading a fleet from Java 21 to 25?</b></summary>
+<summary><b>Q10. 🔵 How would you justify upgrading a fleet from Java 21 to 25?</b></summary>
 
 Risk reduction and capability. JEP 491 removes virtual-thread pinning on `synchronized`, which unblocks safe Loom adoption. Scoped values, flexible constructors and compact headers (opt-in, with measurable heap savings) arrive, along with Leyden AOT improvements for startup, generational Shenandoah, newer JFR profiling features, and 25 being the current LTS with a long support window. Costs: the Security Manager is gone, plus new warnings for `Unsafe` and JNI. The plan is toolchain → runtime → language level, by risk tier, with before/after SLO dashboards.
 </details>

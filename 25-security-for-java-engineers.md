@@ -4,6 +4,15 @@
 
 > *Most breaches don't come from clever cryptanalysis. They come from a string concatenated into a query, an endpoint that never checked who owns the record, a secret committed to git, or a logging library that executed what it logged. Security is mostly engineering discipline applied consistently.*
 
+> [!TIP]
+> **🧭 Decision guide: how users and services prove who they are, and what they may do**
+> - **When it matters:** always, and most of all for multi-tenant APIs, anything that fetches URLs, and anything that parses untrusted input.
+> - **Default:** OAuth 2.x and OpenID Connect through a standard library (Spring Security's resource server), short-lived tokens validated fully, authorisation checked on every object access (tenant and ownership), secrets in a secrets manager, hardened parser defaults, and an SBOM with fast patching.
+> - **Alternatives:** server-side sessions for browser apps (simpler, and revocable); mTLS for service identity; opaque tokens with introspection where revocation matters.
+> - **Failure modes:** broken object-level authorisation, JWT algorithm confusion, SSRF through user-supplied URLs, secrets in logs, weeks to patch a critical CVE.
+> - **Evidence that would change it:** threat-model findings, penetration-test results, and time-to-patch metrics.
+> - **Argued in:** §4–§8 and §11–§14; [Chapter 38](38-case-study-webhook-delivery.md#62-security-what-the-receiver-checks-and-what-we-refuse) tests webhook signatures and SSRF address checks.
+
 ---
 
 ## Table of contents
@@ -415,7 +424,7 @@ Allow-list destinations if possible. Otherwise resolve DNS once, reject private,
 </details>
 
 <details>
-<summary><b>Q10. 🟣 A critical CVE like Log4Shell drops. Walk through your organisation's response.</b></summary>
+<summary><b>Q10. 🔵 A critical CVE like Log4Shell drops. Walk through your organisation's response.</b></summary>
 
 Triage severity and exploitability. Query SBOMs and the artifact repository for affected versions, including transitive and shaded copies, and scan running images. Apply immediate mitigations (WAF rules, configuration flags, egress blocks) while patching: bump via the platform BOM, rebuild, and redeploy by risk tier (internet-facing first). Verify with scanners and monitoring for exploitation attempts. Communicate status. Afterwards, run a postmortem on detection speed, patch velocity and the inventory gaps, and invest in what was slow.
 </details>

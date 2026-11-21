@@ -1,3 +1,12 @@
+/*
+ * Lab:       Classic concurrency problems solved: turn-taking, bounded buffer, H2O, dining philosophers, a thread pool, a crawler
+ * Chapters:  26 (coding and LLD)
+ * Run:       java ConcurrencyProblems.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Brian Goetz et al., Java Concurrency in Practice (2006)
+ * Output:    the properties it prints (such as every H2O group being 2H+1O) hold on every run; the interleavings vary.
+ */
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.*;

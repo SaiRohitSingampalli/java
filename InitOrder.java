@@ -1,3 +1,12 @@
+/*
+ * Lab:       Static and instance initialisation order, and a virtual call from a constructor that sees a null field
+ * Chapters:  01 (platform fundamentals)
+ * Run:       java InitOrder.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JLS §12.4.2 (class initialisation) and §12.5 (creating instances)
+ * Output:    deterministic.
+ */
 public class InitOrder {
     public static void main(String[] args) {
         new Child();

@@ -4,6 +4,15 @@
 
 > *Garbage collection is a trade-off between three things: pause time, throughput and memory footprint. You can pick two. Every GC question an interviewer asks is about which two, and why.*
 
+> [!TIP]
+> **🧭 Decision guide: which collector, and how much memory**
+> - **When it matters:** when GC pauses approach your p99 or p99.9 latency target, when pods run close to their memory limit, or when GC takes more than a few percent of CPU.
+> - **Default:** G1 with a right-sized heap for general services, generational ZGC for latency-critical ones (with spare memory and CPU), Parallel for throughput batch jobs. Size the heap from the allocation rate and the live set, and keep heap plus native memory under the container limit.
+> - **Alternatives:** ZGC everywhere (a simpler latency story that needs more headroom), Shenandoah where your JDK build ships it, Serial for tiny heaps.
+> - **Failure modes:** pods OOMKilled while the heap looks healthy (native memory), pauses that blow the latency budget, the death spiral near a full heap, flags copied from old blog posts.
+> - **Evidence that would change it:** GC logs and JFR: pause percentiles against the target, GC CPU share, the post-GC occupancy trend and the allocation rate.
+> - **Argued in:** §8–§14 and §17; [Chapter 37](37-case-study-fleet-jdk-upgrade.md) shows a collector change hiding inside a JDK upgrade.
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-10--memory-and-gc)
 
 ---

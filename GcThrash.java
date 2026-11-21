@@ -1,3 +1,12 @@
+/*
+ * Lab:       The GC death spiral: a heap that's almost full
+ * Chapters:  32 (case 6)
+ * Run:       java -Xmx128m -Xlog:gc:file=gc.log GcThrash.java, then read gc.log
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   HotSpot Virtual Machine Garbage Collection Tuning Guide
+ * Output:    runs until OutOfMemoryError (about 5 s at -Xmx128m), reports it and exits 0. Leaves gc.log behind.
+ */
 import java.util.*;
 public class GcThrash {
     static volatile Object sink;                                                  // keeps the JIT from eliminating the garbage

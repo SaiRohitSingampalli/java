@@ -4,6 +4,15 @@
 
 > *"It works on my machine" was never the bar. The bar is: it degrades gracefully when its dependencies don't, it tells you what's wrong before customers do, and it can be deployed, rolled back and shut down without anyone noticing.*
 
+> [!TIP]
+> **🧭 Decision guide: the resilience and rollout defaults every service gets**
+> - **When it matters:** for any service with dependencies or users, ideally before its first incident.
+> - **Default:** a timeout on every call, derived from the latency budget; retries only for transient failures of idempotent or keyed operations, at one layer, with jittered backoff and a budget; a concurrency limit per dependency; circuit breakers for failing dependencies; graceful shutdown and honest probes; SLOs with burn-rate alerts; canaries for risky changes.
+> - **Alternatives:** adaptive concurrency limits and load shedding for overload-prone services; blue/green where canaries are hard.
+> - **Failure modes:** retry storms (three layers of three attempts make 27 calls), liveness probes that restart healthy pods under load, alert fatigue, deploys that drop in-flight requests.
+> - **Evidence that would change it:** SLO burn, incident timelines, and saturation in load tests.
+> - **Argued in:** §6–§10 and §12–§13; [Chapter 37](37-case-study-fleet-jdk-upgrade.md#8-rollout-gates-with-evidence-) measures canary gates, and [Chapter 38](38-case-study-webhook-delivery.md) measures bulkheads and breakers.
+
 ---
 
 ## Table of contents
@@ -382,7 +391,7 @@ ENV JAVA_TOOL_OPTIONS="\
 
 ---
 
-## 12. Incidents, postmortems & chaos engineering 🟣
+## 12. Incidents, postmortems & chaos engineering 🟣→🔵
 
 **During an incident:**
 1. **Mitigate first, diagnose later.** Roll back, flip the flag, shed load, fail over. Root-causing can wait until customers are fine.
@@ -468,7 +477,7 @@ Rejecting excess requests early (429/503 with `Retry-After`) when the service is
 </details>
 
 <details>
-<summary><b>Q10. 🟣 You're the incident commander: checkout error rate jumped to 20% right after a deploy. What do you do?</b></summary>
+<summary><b>Q10. 🔵 You're the incident commander: checkout error rate jumped to 20% right after a deploy. What do you do?</b></summary>
 
 Mitigate first: halt the rollout and roll back (or disable the feature flag), given the timing correlation. Assign roles (comms posts status updates, someone captures evidence: dumps, JFR, logs, traces of failing requests). Confirm recovery via the SLIs. Then investigate with the evidence: the deploy diff, config changes, dependency versions, error logs by code, traces. Afterwards, a blameless postmortem: why canary analysis didn't catch it, why the change reached 100%, plus action items with owners.
 </details>

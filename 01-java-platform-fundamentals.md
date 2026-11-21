@@ -657,6 +657,7 @@ public class InitOrder {
 ```
 
 Output:
+<!-- lab-output: InitOrder.java -->
 ```
 1. Parent static block
 2. Child static block
@@ -761,7 +762,7 @@ Other binary-compatibility rules a library owner must know (JLS ch. 13):
 
 ---
 
-## 20. Staff lens: running Java across an organisation 🟣
+## 20. Staff lens: running Java across an organisation 🔵
 
 Questions an architect gets asked that a senior engineer usually doesn't:
 
@@ -879,7 +880,7 @@ Constant variables of primitive or `String` type are inlined into the client's b
 </details>
 
 <details>
-<summary><b>Q17. 🟣 How would you plan a JDK upgrade across hundreds of services?</b></summary>
+<summary><b>Q17. 🔵 How would you plan a JDK upgrade across hundreds of services?</b></summary>
 
 Inventory first (versions, frameworks, internal-API usage via `jdeps --jdk-internals`). Then change the **toolchain** (new JDK, old `--release`), then the **runtime** (run on the new JVM, watch GC ergonomics, illegal reflective access, deprecations), then the **language level**. Roll out by risk tier with before/after dashboards (CPU, RSS, GC pauses, p99). Keep the base container image and CI matrix on a single, automatically updated patch version. And make the next upgrade cheaper: canary builds on the latest feature release, plus a standing upgrade cadence.
 </details>

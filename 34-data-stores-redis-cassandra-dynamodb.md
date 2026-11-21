@@ -4,6 +4,15 @@
 
 > *A relational database lets you ask questions you didn't plan for. Redis, Cassandra and DynamoDB ask you to plan the questions up front, and repay you with predictable latency at almost any scale. Most expensive mistakes with them come from forgetting which kind of database you're using.*
 
+> [!TIP]
+> **🧭 Decision guide: which data store for which job**
+> - **When it matters:** when a relational database is reaching its limits, or when caching, coordination or very large partitioned data enter the design.
+> - **Default:** a relational system of record; Redis for caching, counters, rate limits and short-lived coordination, each with a TTL and a plan for Redis being empty or down; Cassandra or DynamoDB for partition-shaped, write-heavy or very large data whose access patterns you know.
+> - **Alternatives:** PostgreSQL features (partitioning, `SKIP LOCKED`, JSONB) before a new store; a managed service before self-hosting.
+> - **Failure modes:** Redis used as a system of record, single commands that stall everyone (`KEYS`, big deletes), locks without fencing tokens, hot partitions, queries the key design can't serve.
+> - **Evidence that would change it:** measured load beyond what one relational primary can take, access patterns that are stable and partition-shaped, latency targets a disk-backed store can't meet.
+> - **Argued in:** §1, §4–§8, §11–§13 and §15.
+
 The Redis experiments in §3–§6 and §8 ran from JDK 25 against Redis 7.0 (Ubuntu's package), through a small RESP client in the labs, so no client library hides what happens on the wire. The hash-slot check in §7 ran against a cluster-mode node. These commands behave the same on Redis 8 and Valkey. No Cassandra cluster or DynamoDB endpoint was available here, so §10–§14 are design guidance with worked arithmetic, not measurements.
 
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-34--data-stores)
@@ -219,6 +228,7 @@ Sorted sets give leaderboards for free: `ZINCRBY` and `ZADD` are O(log N), `ZREV
 ### Locks (measured)
 Two clients, a 200 ms lease, and a holder that stalls for 300 ms (a GC pause, a slow call):
 
+<!-- lab-output: RedisLabs.java -->
 ```
 6. A 200 ms lock lease, and a client that pauses for 300 ms
   A: SET lock NX PX 200 -> OK, fencing token 1

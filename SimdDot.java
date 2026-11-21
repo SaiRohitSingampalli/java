@@ -1,3 +1,12 @@
+/*
+ * Lab:       Brute-force dot products: a scalar loop, four accumulators and the Vector API
+ * Chapters:  35 (AI features)
+ * Run:       java --add-modules jdk.incubator.vector -Xmx1g SimdDot.java    (add 5000 as an argument for an in-cache run)
+ * Needs:     JDK 21 or newer (the Vector API is an incubator module, so expect a warning)
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 448 (Vector API, JDK 21); JEP 508 (Vector API, JDK 25)
+ * Output:    timings vary by CPU; try both JDKs.
+ */
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;

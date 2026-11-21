@@ -4,6 +4,15 @@
 
 > *Startup time used to be JVM trivia. With autoscaling, scale-to-zero and per-second billing, it's an architecture decision with money attached, and Java now offers several very different ways to buy it. Each one trades away something different.*
 
+> [!TIP]
+> **🧭 Decision guide: how to make the JVM start fast and run small**
+> - **When it matters:** for autoscaling or scale-to-zero services, frequent deploys, and large fleets where memory is money.
+> - **Default:** the AOT cache on JDK 25 as the fleet default, right-sized heaps and native memory, and compact object headers where measurements show a gain (they're on by default in JDK 27).
+> - **Alternatives:** native image where cold start dominates the economics (scale-to-zero, CLIs); CRaC where checkpoint and restore fit the platform and secrets are handled.
+> - **Failure modes:** reflection gaps in native images found in production, CRaC snapshots that capture secrets, AOT caches trained on unrepresentative runs.
+> - **Evidence that would change it:** cold-start latency against the target, cost per pod, measured startup time and RSS.
+> - **Argued in:** §3–§9; [Chapter 37](37-case-study-fleet-jdk-upgrade.md) puts these gains into a fleet upgrade's business case.
+
 **How the numbers here were produced:** a small service-shaped app (an HTTP server and client, Jackson JSON, XML processing, regex, about 3,600 classes) on a 2-vCPU Linux VM, with OpenJDK 21 and OpenJDK 25.0.5. Each figure is the median of 15 interleaved runs. GraalVM Native Image and CRaC need special JDK builds, so for those I cite published sources rather than measuring.
 
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-30--startup-and-footprint)

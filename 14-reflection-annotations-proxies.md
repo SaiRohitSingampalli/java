@@ -4,6 +4,15 @@
 
 > *Every "magic" thing a Java framework does (dependency injection, `@Transactional`, mocks, ORMs, APM agents) is built from the four tools in this chapter. Once you understand them, the magic becomes predictable, and so do its failure modes.*
 
+> [!TIP]
+> **🧭 Decision guide: runtime reflection and proxies, or build-time generation**
+> - **When it matters:** for startup- or memory-sensitive services, native-image targets, libraries used across many teams, and anything that reaches into JDK internals.
+> - **Default:** let frameworks use reflection and proxies at the edges (dependency injection, persistence, web), keep domain code plain, use method handles rather than raw reflection in library code, and keep an inventory of agents and `--add-opens` flags with owners.
+> - **Alternatives:** build-time generation (annotation processors, Spring AOT, MapStruct, Dagger) for fast startup and native images; plain code on hot paths.
+> - **Failure modes:** self-invocation that bypasses a proxy, so `@Transactional` silently does nothing; final classes and methods that can't be proxied; deep reflection that breaks at the next JDK as integrity rules tighten.
+> - **Evidence that would change it:** startup or memory profiles dominated by reflection and class generation, or a decision to target native image.
+> - **Argued in:** §2, §4–§5 and §9–§10.
+
 ---
 
 ## Table of contents

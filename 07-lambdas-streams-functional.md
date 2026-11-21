@@ -235,6 +235,7 @@ Optional<String> first = Stream.of("a", "bb", "ccc", "dddd")
         .map(s -> { System.out.println("map " + s); return s.toUpperCase(); })
         .findFirst();
 ```
+<!-- lab-output: VerticalStream.java -->
 ```
 filter a
 filter bb

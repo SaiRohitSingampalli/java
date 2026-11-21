@@ -1,3 +1,12 @@
+/*
+ * Lab:       A class-loader leak that fills Metaspace
+ * Chapters:  32 (case 4)
+ * Run:       javac -d /tmp/ch32 MetaspaceLeak.java Plugin.java && java -XX:MaxMetaspaceSize=48m -cp /tmp/ch32 MetaspaceLeak
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   HotSpot Virtual Machine Garbage Collection Tuning Guide (class metadata)
+ * Output:    loads plugin classes until OutOfMemoryError: Metaspace, reports it and exits 0.
+ */
 import java.lang.management.*;
 import java.util.*;
 public class MetaspaceLeak {

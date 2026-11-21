@@ -1,3 +1,12 @@
+/*
+ * Lab:       Sealed interfaces, records and nested record patterns with guards
+ * Chapters:  08 (modern Java)
+ * Run:       java ExprDemo.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 409 (sealed classes), JEP 440 (record patterns), JEP 441 (pattern matching for switch)
+ * Output:    deterministic.
+ */
 public class ExprDemo {
     sealed interface Expr permits Num, Add, Mul, Neg {}
     record Num(int value)            implements Expr {}

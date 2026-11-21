@@ -1,3 +1,12 @@
+/*
+ * Lab:       An enum state machine that rejects illegal transitions
+ * Chapters:  17 (design patterns)
+ * Run:       java OrderStateDemo.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Joshua Bloch, Effective Java, 3rd edition, chapter 6 (enums)
+ * Output:    deterministic.
+ */
 public class OrderStateDemo {
     public static void main(String[] args) {
         OrderState s = OrderState.DRAFT.on(OrderState.Event.SUBMIT).on(OrderState.Event.PAY).on(OrderState.Event.SHIP);

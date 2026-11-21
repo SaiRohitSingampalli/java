@@ -1,3 +1,16 @@
+/*
+ * Lab:       OOMKilled while the heap looks healthy: a direct-buffer leak, found with Native Memory Tracking
+ * Chapters:  32 (case 1)
+ * Run:       javac -d /tmp/ch32 DirectLeak.java && java -Xmx256m -XX:MaxDirectMemorySize=64m -XX:NativeMemoryTracking=summary \
+ *              -XX:+UnlockDiagnosticVMOptions -XX:+PrintNMTStatistics -cp /tmp/ch32 DirectLeak
+ *            Compile it first: run as `java DirectLeak.java`, the launcher's in-process compile leaves about
+ *            20 MB of garbage on the heap, and the heap figure no longer shows how small the heap really is.
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Native Memory Tracking in the JDK troubleshooting guide; ByteBuffer.allocateDirect API docs
+ * Output:    allocates until the 64 MB direct-memory limit, reports the OutOfMemoryError and exits 0. The buffer
+ *            and heap-used lines are deterministic; the NMT figures vary a little.
+ */
 import java.lang.management.*;
 import java.nio.ByteBuffer;
 import java.util.*;

@@ -1,3 +1,12 @@
+/*
+ * Lab:       10,000 and 100,000 virtual threads against 200 platform threads, on blocking work
+ * Chapters:  12 (advanced concurrency and Loom)
+ * Run:       java VirtualThreads.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 444 (virtual threads): https://openjdk.org/jeps/444
+ * Output:    timings vary by machine. Takes about 13 seconds.
+ */
 import java.time.Duration;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;

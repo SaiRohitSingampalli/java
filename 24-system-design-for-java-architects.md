@@ -4,6 +4,15 @@
 
 > *A design interview isn't a quiz with one right answer. It's a simulation of how you'd lead a real design discussion: you clarify ambiguity, put numbers on the problem, make trade-offs out loud, and still have a plan when the interviewer breaks your favourite component.*
 
+> [!TIP]
+> **🧭 Decision guide: which store, what consistency, and how to scale**
+> - **When it matters:** for new systems, and for existing ones that hit a scaling or reliability wall.
+> - **Default:** requirements and numbers first; one relational system of record with read replicas and caches; strong consistency where money or stock is involved, and stated staleness elsewhere; partition by the dominant access key only when one node isn't enough.
+> - **Alternatives:** wide-column or key-value stores for partition-shaped, write-heavy data ([Chapter 34](34-data-stores-redis-cassandra-dynamodb.md)); cells to contain the blast radius; active-active across regions only with a conflict strategy.
+> - **Failure modes:** designs without numbers, hot partitions, cache stampedes, one global sequence or lock, rollback plans that ignore data the new path has written.
+> - **Evidence that would change it:** estimates beyond one node's limits, measured hot keys, an availability target one region can't meet.
+> - **Argued in:** §1–§4 and §7–§13; full case studies in [36](36-case-study-payments.md), [37](37-case-study-fleet-jdk-upgrade.md) and [38](38-case-study-webhook-delivery.md).
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-24--system-design)
 
 ---
@@ -148,6 +157,7 @@ static long sha256Long(String s) {                                  // any well-
 The `TreeMap` *is* the ring: `ceilingEntry` is the "walk clockwise" step, in O(log n) ([Chapter 06 §7](06-collections.md#7-treemap--navigable-collections-)).
 
 **Measured** with 100,000 keys, 3 nodes, then adding a 4th:
+<!-- lab-output: Ring.java -->
 ```
 vnodes=  1  3-node split={node-A=40034, node-B=47372, node-C=12594}  keys moved after adding node-D=45.2%
 vnodes= 10  3-node split={node-A=46029, node-B=25695, node-C=28276}  keys moved after adding node-D=20.7%
@@ -174,7 +184,7 @@ naive hash % N: keys moved going from 3 to 4 nodes=75.1%
 | **Snowflake-style** (64-bit) | `41 bits ms timestamp │ 10 bits worker │ 12 bits sequence` → ~4K IDs/ms per worker, k-sorted | Worker-ID assignment, **clock going backwards** (wait or refuse) |
 | Ticket server / range allocation | A service hands out ID blocks (1,000 at a time) | Gaps on crash; the allocator is a dependency |
 
-For **public identifiers**, prefer opaque IDs (UUIDv7, or encoded Snowflake IDs) over sequential integers, which leak volume and invite enumeration attacks ([Chapter 25](25-security-for-java-engineers.md)).
+For **public identifiers**, don't expose sequential integers: they leak volume and invite enumeration attacks ([Chapter 25](25-security-for-java-engineers.md)). **Encoding isn't hiding:** base62 or hex of a counter or a Snowflake ID is still ordered and guessable near any ID an attacker has seen. Use IDs with enough randomness (a UUIDv7 has up to 74 random bits after its timestamp), or a keyed permutation of the internal ID (§7). Authorisation checks are still required either way.
 
 ---
 
@@ -236,12 +246,25 @@ GET  /{code} → 301/302 Location: <url>
 ```
 
 **Key decisions:**
-1. **Code generation:** base62-encode a unique 64-bit ID (Snowflake or range allocation). 7 base62 characters give 62⁷ ≈ 3.5 × 10¹² codes. No collisions, no "check if exists, then retry" loop. Custom aliases go through a conditional insert under a uniqueness constraint.
+1. **Code generation: size the ID space first.** Seven base62 characters hold 62⁷ ≈ 3.5 × 10¹² codes, but a 64-bit ID needs **11** (62¹¹ ≈ 5.2 × 10¹⁹ > 2⁶³). A Snowflake ID minted in 2026 against a 2020 epoch is already about 9.1 × 10¹⁷, which is 11 characters. So pick one and say it out loud:
+   - **7-character codes from a range allocator:** each instance leases blocks of IDs from a sequence that's capped below 62⁷. At a *sustained* 10K creates/s the space lasts about 11 years, at 1K/s about 112. Plan the move to 8 characters (62⁸ ≈ 2.2 × 10¹⁴) as a format change: clients treat codes as opaque strings of any length.
+   - **11-character codes from 64-bit IDs** (Snowflake), if shorter links don't matter.
+
+   **Encoding doesn't stop enumeration.** Base62 of a counter is still a counter: neighbouring IDs differ in the last character. If links mustn't be enumerable, either generate **random codes** and insert under a uniqueness constraint, retrying on conflict (at a billion stored links a new 7-character code collides 0.03% of the time), or pass the counter through a **keyed permutation** of [0, 62⁷), a format-preserving cipher such as NIST FF1, so codes look random, stay unique and need no collision check. Neither makes a link *secret*: private links need long random tokens (128 bits is 22 characters) and access checks. Custom aliases go through a conditional insert under a uniqueness constraint. The lab computes these numbers and runs a small Feistel permutation:
+   ```
+   2. Base62 of a counter is still a counter: neighbours are one character apart
+      id 1,000,000,000 -> 015ftgG
+      id 1,000,000,001 -> 015ftgH
+   3. The same counter through a keyed permutation of [0, 62^7) (Feistel, 6 rounds, cycle-walking)
+      id 1,000,000,000 -> ZAs8mLT
+      id 1,000,000,001 -> ySU7MFq
+      200,000 consecutive ids -> 200,000 distinct 7-character codes; every code decodes to its id: yes
+   ```
 2. **Storage:** a KV access pattern (`code → url, expiry`). DynamoDB, Cassandra, or PostgreSQL partitioned by code. Writes are modest. Reads are served almost entirely from cache.
 3. **Read path:** CDN or edge cache → in-process Caffeine → Redis → database. Popular links follow a power-law distribution, so cache hit rates are very high. Negative-cache unknown codes.
 4. **301 vs 302:** 301 (permanent) is cached by browsers, which reduces load but means **analytics miss repeat clicks**. 302/307 send every click to you. That's a business trade-off.
 5. **Analytics:** never synchronously on the redirect path. Emit click events to Kafka and aggregate in a stream processor.
-6. **Abuse:** URL scanning (malware, phishing), rate limits on creation, and opaque codes so links can't be enumerated.
+6. **Abuse:** URL scanning (malware, phishing), rate limits on creation *and* on lookups of unknown codes, and random or permuted codes (decision 1) where enumeration matters.
 
 ```mermaid
 flowchart LR
@@ -250,7 +273,7 @@ flowchart LR
     API --> R["Redis L2"]
     R -->|"miss"| DB[("KV store<br/>code → url")]
     API -- "click event (async)" --> K["Kafka"] --> AGG["Stream aggregation"] --> OLAP[("Analytics store")]
-    C["Create API"] --> IDG["ID generator<br/>(Snowflake)"]
+    C["Create API"] --> IDG["ID allocator<br/>(leased ranges + keyed permutation)"]
     C --> DB
 ```
 
@@ -261,7 +284,7 @@ flowchart LR
 **Requirements:** accept payments through external processors (PSPs), never double-charge, keep an auditable ledger of balances, reconcile with processors, PCI compliance, high availability, and **correctness over latency**.
 
 **Core principles:**
-1. **Idempotency everywhere** ([Chapter 23 §7](23-distributed-systems-microservices.md#7-idempotency-the-property-that-makes-retries-safe-)): client `Idempotency-Key` → payment intent. Outbound calls to the PSP carry *their own* idempotency key, derived deterministically from the intent ID and attempt.
+1. **Idempotency everywhere** ([Chapter 23 §7](23-distributed-systems-microservices.md#7-idempotency-the-property-that-makes-retries-safe-)): the client's `Idempotency-Key` is claimed as a payment operation *before* anything is charged. Outbound calls to the PSP carry *their own* idempotency key, which belongs to that operation: every re-send of it (after a timeout, by a retry or by the reconciler) uses the **same** key. A new key comes only with a new attempt after a *definite* failure, such as a decline followed by another card.
 2. **An explicit state machine** for payments (`CREATED → AUTHORIZING → AUTHORIZED → CAPTURING → CAPTURED / FAILED / REFUNDED`), persisted, with **transitions as guarded updates** (`UPDATE … SET state = 'CAPTURED' WHERE id = ? AND state = 'CAPTURING'`).
 3. **Double-entry ledger:** every movement is a set of **immutable** entries whose debits and credits sum to zero. Balances are *derived* (summed or snapshotted), never edited in place.
    ```
@@ -272,7 +295,7 @@ flowchart LR
    Corrections are **new reversing entries**, never updates. That gives auditability by construction.
 4. **Money representation:** `long` minor units plus a currency, or `BigDecimal` with a fixed scale and explicit rounding ([Chapter 01 §8](01-java-platform-fundamentals.md#8-floating-point-ieee-754-and-money-)). Never `double`.
 5. **Consistency:** ledger writes for one account need serialisability. Options include a single writer per account (partition by account ID), `SERIALIZABLE` transactions with retry, or conditional balance updates. Cross-account transfers are **one local transaction** when both accounts are in the same database, and a **saga with reserve/commit** semantics when they aren't.
-6. **Unknown outcomes:** a PSP call that times out is in an *unknown* state, not a failed one. Never assume failure and retry blindly. **Query the PSP by idempotency key**, or let reconciliation settle it.
+6. **Unknown outcomes:** a PSP call that times out is in an *unknown* state, not a failed one. Never assume failure, and never retry with a new key. **Re-send with the same key** while the PSP still keeps it (the PSP replays its first answer), after that **look the payment up by your own reference**, and let reconciliation settle the rest. [Chapter 36](36-case-study-payments.md) works through this design as a full case study.
 7. **Reconciliation:** compare internal ledger and payment records against PSP settlement reports daily (and more often for high volumes). Mismatches create cases for ops. This is the safety net that catches everything the other mechanisms miss.
 8. **PCI scope minimisation:** tokenise card data at the edge (PSP-hosted fields or a vault), so raw PANs never touch your services or logs.
 9. **Events through an outbox** (`PaymentCaptured`) feed the order, notification and accounting systems.
@@ -446,7 +469,7 @@ Changing N changes the result for most keys. In our measurement, going from 3 to
 <details>
 <summary><b>Q3. 🟣 How do you guarantee a customer is never charged twice?</b></summary>
 
-Client idempotency keys mapped to a payment intent with a unique constraint. A persisted state machine with guarded transitions. Deterministic idempotency keys on calls to the payment processor. Treating timeouts as *unknown* (query by key, never blindly retry). Idempotent webhook processing (dedupe by event ID, verify signatures). Daily reconciliation against processor settlement reports to catch anything that slipped through.
+Client idempotency keys claimed as a payment operation, under a unique constraint, *before* anything is charged. A persisted state machine with guarded transitions. One processor idempotency key per operation, reused on every re-send. Treating timeouts as *unknown*: re-send with the same key, or look the charge up by reference once the processor may have forgotten the key; never retry with a new key. Idempotent webhook processing (dedupe by event ID, verify signatures). Daily reconciliation against processor settlement reports to catch anything that slipped through.
 </details>
 
 <details>

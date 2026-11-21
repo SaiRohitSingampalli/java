@@ -1,3 +1,12 @@
+/*
+ * Lab:       Removing the second-to-last element during iteration: no exception, an element skipped
+ * Chapters:  06 (collections)
+ * Run:       java IteratorQuirk.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   OpenJDK source: java.util.ArrayList.Itr
+ * Output:    deterministic.
+ */
 import java.util.*;
 
 public class IteratorQuirk {

@@ -1,3 +1,13 @@
+/*
+ * Lab:       Field layout and object header size, read through sun.misc.Unsafe
+ * Chapters:  09 (JVM internals), 30 §6
+ * Run:       java FieldOffsets.java    (on JDK 25, add -XX:+UseCompactObjectHeaders and compare)
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 519 (compact object headers); JEP 471 (Unsafe memory access deprecated)
+ * Output:    deterministic for a given JDK and flags. Unsafe refuses to report a record's field offsets, so the
+ *            lab says so for Point. JDK 24 and later print an Unsafe deprecation warning.
+ */
 import java.lang.reflect.Field;
 public class FieldOffsets {
     static class Mixed { boolean flag; int count; long id; Object ref; byte b; }
@@ -9,7 +19,12 @@ public class FieldOffsets {
             System.out.println(c.getSimpleName() + ":");
             for (Field f : c.getDeclaredFields()) {
                 if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) continue;
-                System.out.println("  offset " + u.objectFieldOffset(f) + "  " + f.getType().getSimpleName() + " " + f.getName());
+                try {
+                    System.out.println("  offset " + u.objectFieldOffset(f) + "  " + f.getType().getSimpleName() + " " + f.getName());
+                } catch (UnsupportedOperationException e) {          // JDK 16+ refuses records and hidden classes
+                    System.out.println("  (no offsets: " + e.getMessage() + ")");
+                    break;
+                }
             }
         }
     }

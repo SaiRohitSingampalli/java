@@ -4,6 +4,15 @@
 
 > *Doug Lea's `java.util.concurrent` gave Java the best concurrency library of its generation. Project Loom then changed what "a thread" costs. A staff engineer has to master both, and know when each one is the wrong tool.*
 
+> [!TIP]
+> **🧭 Decision guide: platform-thread pools, virtual threads or reactive**
+> - **When it matters:** for I/O-bound services with many concurrent requests or slow dependencies, and every time you size a pool or a queue.
+> - **Default**, for request/response services on Java 21+: virtual threads with plain blocking code, a concurrency limit (a semaphore or bulkhead) toward each dependency, and bounded queues with rejection policies chosen on purpose. Structured concurrency suits fan-out, but it's a preview API until JDK 28.
+> - **Alternatives:** platform-thread pools for CPU-bound work; reactive for streaming and end-to-end backpressure ([Chapter 29](29-reactive-java-reactor-webflux.md)).
+> - **Failure modes:** virtual threads moving the bottleneck to the connection pool, pinning on JDK 21 (fixed for `synchronized` in JDK 24), unbounded queues, thread-starvation deadlock in bounded pools, per-thread caches multiplied by a million threads.
+> - **Evidence that would change it:** a load test with slow dependencies showing pool or connection exhaustion, `jdk.VirtualThreadPinned` events, queue wait time.
+> - **Argued in:** §8–§9, §12–§14 and §17; [Chapter 39](39-staff-artefact-exercises.md) works this decision through with an experiment.
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-12--advanced-concurrency-and-loom)
 
 ---
@@ -543,7 +552,7 @@ ExecutorService perTask = Executors.newVirtualThreadPerTaskExecutor();   // one 
 
 Unstructured async code (`CompletableFuture`, `ExecutorService.submit`) lets subtasks **outlive** the code that started them: failures get lost, cancellation doesn't propagate, and thread dumps show orphaned work. **Structured concurrency** treats a group of subtasks as **one unit of work with a lexical scope**, just like structured programming did for `goto`.
 
-*(Preview. The API shown is Java 25's (JEP 505). Names and joiners have shifted between previews, and it's still in preview in 26 and 27.)*
+*(Preview. The API shown is Java 25's (JEP 505). Names and joiners have shifted between previews, and it's still in preview in 26 and 27; JDK 27's seventh preview (JEP 533) throws `ExecutionException` from `join` instead of `FailedException`. JEP 543 finalises the API, unchanged from JDK 27, in JDK 28, due in March 2027.)*
 
 ```java
 // All must succeed; if one fails, cancel the others and propagate the failure

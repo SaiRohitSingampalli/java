@@ -1,3 +1,12 @@
+/*
+ * Lab:       The tool-calling loop with a scripted model: argument checks, policy, approval, unknown tools, a step limit
+ * Chapters:  35 (AI features)
+ * Run:       java ToolLoop.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   none: a scripted model stands in for an LLM
+ * Output:    deterministic.
+ */
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;

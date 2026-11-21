@@ -1,3 +1,12 @@
+/*
+ * Lab:       A one-shot latch built on AbstractQueuedSynchronizer, and a fork/join sum
+ * Chapters:  12 (advanced concurrency and Loom)
+ * Run:       java OneShotLatchAndForkJoin.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   AbstractQueuedSynchronizer and ForkJoinPool API docs; Doug Lea, The java.util.concurrent Synchronizer Framework (2004)
+ * Output:    deterministic.
+ */
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;

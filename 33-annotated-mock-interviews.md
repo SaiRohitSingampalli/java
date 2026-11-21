@@ -147,9 +147,12 @@ flowchart LR
 | Security | HMAC signatures | Signatures with replay protection and rotation, **plus SSRF on our side** |
 | Prioritisation | — | An explicit v1 scope and what's deferred, and why |
 
+> [!TIP]
+> **Worked through:** [Chapter 38](38-case-study-webhook-delivery.md) takes this design to a design review, with the isolation and SSRF claims measured in labs.
+
 ---
 
-## Mock 3: behavioural, influence without authority 🟣
+## Mock 3: behavioural, influence without authority 🔵
 
 **Interviewer:** Tell me about a time you had to change a decision or practice in teams you didn't manage.
 
@@ -263,6 +266,7 @@ AtomicLong clock = new AtomicLong();
 KeyedRateLimiter limiter = new KeyedRateLimiter(5, 1.0, clock::get);
 // 6 calls for "alice" at t=0; advance 2 s; 3 more calls; "bob" separately; 8 threads x 1000 calls for "carol"; then advance 10 s and evict
 ```
+<!-- lab-output: KeyedRateLimiter.java -->
 ```
 alice, 6 calls at t=0s : [true, true, true, true, true, false]
 alice, 3 calls at t=2s : [true, true, false]
@@ -295,7 +299,7 @@ For an API gateway I'd start with Redis Lua for paid-tier keys where accuracy ma
 
 ---
 
-## Scoring yourself 🟣
+## Scoring yourself 🔵
 
 After each practice round, score yourself 1–4 on each line (1 = absent, 4 = strong and unprompted):
 
@@ -312,7 +316,7 @@ After each practice round, score yourself 1–4 on each line (1 = absent, 4 = st
 
 A senior bar is mostly 3s. A staff bar is 3s and 4s, with **Scope** and **Failure modes** at 4.
 
-## How to practise with these 🟣
+## How to practise with these 🔵
 
 1. **Cover the candidate lines** and answer each interviewer prompt out loud first, then compare.
 2. **Role-play** with a friend. One person interviews from these scripts; then swap. The interviewer's job is to push with follow-ups.
@@ -337,7 +341,7 @@ Requirements: flag types (booleans, percentages, targeting rules), evaluation la
 </details>
 
 <details>
-<summary><b>Q3. 🟣 Behavioural: "Tell me about a decision you made that turned out to be wrong."</b></summary>
+<summary><b>Q3. 🔵 Behavioural: "Tell me about a decision you made that turned out to be wrong."</b></summary>
 
 Pick a real, consequential decision, not a disguised strength. Structure: the context and the information you had, *why* the decision was reasonable then, what happened and how you noticed (the signals), what you did to correct course, and what you changed in how you decide (a checkpoint you now add, a reversibility assessment, earlier involvement of a specific group). Show accountability without self-flagellation, and a learning that's specific enough to be credible.
 </details>
@@ -367,7 +371,7 @@ Weekly and time-anchored suggests a traffic pattern (Monday-morning logins and r
 </details>
 
 <details>
-<summary><b>Q8. 🟣 Leadership: "Two senior engineers strongly disagree about Kafka vs RabbitMQ for a new system, and you're asked to decide."</b></summary>
+<summary><b>Q8. 🔵 Leadership: "Two senior engineers strongly disagree about Kafka vs RabbitMQ for a new system, and you're asked to decide."</b></summary>
 
 Don't decide by preference or seniority. Restate the requirements both sides agree on, and turn the disagreement into explicit criteria: replay and retention, ordering, throughput, routing patterns, operational expertise, existing platform, cost. Ask each engineer to present the strongest case for the *other* option (it surfaces real trade-offs and cools emotions). If a criterion is uncertain, run a time-boxed spike that measures it. Decide, write an ADR including the dissent and the conditions that would make us revisit, and make sure both engineers have meaningful ownership in the outcome. Disagree-and-commit applies to you as well.
 </details>

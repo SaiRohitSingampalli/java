@@ -4,6 +4,15 @@
 
 > *Good design is the art of keeping change cheap. Every principle in this chapter is a heuristic for one question: when the requirement changes next quarter, how much code do I have to touch, and how scared will I be to touch it?*
 
+> [!TIP]
+> **🧭 Decision guide: how much architecture a service gets**
+> - **When it matters:** for services with real domain rules that will live for years, or that several teams change.
+> - **Default:** a modular structure with dependencies pointing inwards; hexagonal (ports and adapters) where domain rules are rich and infrastructure must be swappable or testable; plain layers for CRUD; an ADR for every decision that's expensive to reverse.
+> - **Alternatives:** transaction scripts for simple CRUD; DDD tactical patterns (aggregates, value objects, domain events) for complex domains.
+> - **Failure modes:** mapping boilerplate with no payoff, persistence concerns leaking through every layer, changes to untested legacy code without a seam.
+> - **Evidence that would change it:** change coupling (files that always change together), defects clustering in one module, and the lead time for changes there.
+> - **Argued in:** §5–§7 and §10–§11.
+
 ---
 
 ## Table of contents

@@ -4,6 +4,15 @@
 
 > *Reactive programming isn't "async with extra steps". It's a contract for moving data between components at the pace the slowest one can sustain, plus a library of operators for composing that safely. Once you understand the contract, Reactor's hundreds of operators stop being intimidating.*
 
+> [!TIP]
+> **🧭 Decision guide: Reactor and WebFlux, or virtual threads**
+> - **When it matters:** when you choose the model for a new service, or when an existing reactive codebase has become hard to change.
+> - **Default:** virtual threads with blocking code and a concurrency limit per dependency for request/response services; reactive where it earns its keep: streaming, end-to-end backpressure, gateways that hold huge numbers of connections.
+> - **Alternatives:** keep a healthy reactive codebase as it is; Kotlin coroutines in Kotlin teams.
+> - **Failure modes:** blocking calls on event-loop threads, lost tracing and security context, unbounded `flatMap` concurrency, stack traces nobody can read during an incident.
+> - **Evidence that would change it:** a streaming workload that needs backpressure end to end, or connection counts that virtual threads can't hold within the memory budget.
+> - **Argued in:** §1, §8, §10, §12 and §15.
+
 The `java.util.concurrent.Flow` programs in §2–§4 and §8 were run on JDK 25, and their output is real. Reactor snippets target Reactor 3.8 (the 2025.0 release train that Spring Boot 4 uses).
 
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-29--reactive-java)
@@ -142,6 +151,7 @@ Publisher<String> pipeline = new MapOp<>(new MapOp<>(new Range(1, 5), x -> x * 1
 log("assembled: nothing has executed yet");
 pipeline.subscribe(new Printer());
 ```
+<!-- lab-output: FlowDemos.java -->
 ```
 main   assembling Range(1..5) -> map1(x * 10) -> map2("#" + x)
 main   assembled: nothing has executed yet
@@ -218,6 +228,7 @@ That's backpressure in two lines. With `submit`, the producer was slowed to the 
 
 ## 4. Cold vs hot publishers 🔴
 
+<!-- lab-output: FlowDemos.java -->
 ```
 cold: A=[1, 2, 3] B=[1, 2, 3]   (each subscriber gets its own run from the start)
 hot:  early=[1, 2, 3, 4, 5, 6, 7, 8] late=[6, 7, 8]   (a late subscriber only sees what's emitted after it joins)

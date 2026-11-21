@@ -1,3 +1,12 @@
+/*
+ * Lab:       Connection-pool timeouts while the database is idle: a remote call inside a transaction
+ * Chapters:  32 (case 7)
+ * Run:       java PoolExhaustion.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   HikariCP wiki, About Pool Sizing
+ * Output:    timings and counts vary slightly from run to run.
+ */
 import java.util.*;
 import java.util.concurrent.*;
 public class PoolExhaustion {

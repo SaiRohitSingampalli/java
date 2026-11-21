@@ -4,6 +4,15 @@
 
 > *Most production incidents involving Java I/O come down to four things: a missing timeout, an unbounded buffer, a wrong charset, or deserializing something you shouldn't trust. This chapter covers the machinery and those four failure modes.*
 
+> [!TIP]
+> **🧭 Decision guide: the I/O model and the data format at a boundary**
+> - **When it matters:** for every network client and server, file handling at scale, and every payload that crosses a service boundary.
+> - **Default:** blocking I/O on virtual threads, with connect, read and overall timeouts on every call; stream large payloads instead of buffering them; JSON for public and human-facing APIs, Protobuf for high-volume internal ones, with automated compatibility checks; Java serialization never for untrusted input.
+> - **Alternatives:** NIO or Netty for proxies and protocol work; reactive for streaming; Avro with a schema registry for event streams.
+> - **Failure modes:** calls without timeouts holding threads for minutes, huge payloads buffered into the heap, deserialization gadget chains, text decoded with the wrong charset.
+> - **Evidence that would change it:** a profile showing per-connection threads or copying as the cost, or a payload and latency budget that JSON can't meet.
+> - **Argued in:** §6 and §9–§12.
+
 ---
 
 ## Table of contents

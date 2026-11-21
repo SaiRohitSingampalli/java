@@ -4,6 +4,15 @@
 
 > *Concurrency bugs don't fail in tests. They fail at 2 a.m. under load, once a week, on one host out of a hundred. The only defence is understanding the rules well enough to write code that is correct by construction.*
 
+> [!TIP]
+> **🧭 Decision guide: how to make shared state safe**
+> - **When it matters:** whenever state is touched by more than one thread: caches, counters, lazily built singletons, objects handed to executors or callbacks.
+> - **Default:** don't share. Use immutable objects, confinement to one owner (a thread, a partition, an actor) and messages between owners. When you must share, use `java.util.concurrent` types, then `synchronized` with written invariants; atomics and `volatile` only for single-variable state.
+> - **Alternatives:** explicit locks for timed or interruptible waits ([Chapter 12](12-concurrency-advanced-juc-loom.md)); lock-free structures when a profile proves contention.
+> - **Failure modes:** lost updates, writes another thread never sees, unsafe publication of half-built objects, deadlock from inconsistent lock order, `ThreadLocal` leaks in pools.
+> - **Evidence that would change it:** JFR monitor-contention and park events, or a flame graph with time blocked on a lock; jcstress results for any hand-written primitive.
+> - **Argued in:** §5, §8–§12 and §14.
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-11--concurrency-foundations)
 
 ---
@@ -465,7 +474,7 @@ Found one Java-level deadlock:
 Java stack information for the threads listed above:
 ===================================================
 "transfer-A-to-B":
-	at Deadlock.transfer(Deadlock.java:10)
+	at Deadlock.transfer(Deadlock.java:19)
 	- waiting to lock <0x00000000a5f19088> (a Deadlock$Account)
 	- locked <0x00000000a5f19040> (a Deadlock$Account)
 	...
@@ -648,7 +657,7 @@ It made the uncontended reacquisition of a lock by the same thread nearly free, 
 </details>
 
 <details>
-<summary><b>Q15. 🟣 How do you make a team's concurrent code reviewable and testable?</b></summary>
+<summary><b>Q15. 🔵 How do you make a team's concurrent code reviewable and testable?</b></summary>
 
 Prefer immutability and confinement in the design. Document the thread-safety level and use `@GuardedBy`/`@ThreadSafe` annotations, checked by static analysis (Error Prone). Keep lock scopes small and lock ordering documented. Use high-level j.u.c. primitives instead of `wait`/`notify`. Use jcstress for low-level primitives and stress or soak tests for components. Make thread dumps, deadlock detection and contention metrics (JFR) part of the operational toolkit.
 </details>

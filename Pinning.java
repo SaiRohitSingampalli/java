@@ -1,3 +1,13 @@
+/*
+ * Lab:       Virtual-thread pinning inside synchronized, and how ReentrantLock and JDK 24 avoid it
+ * Chapters:  32 (case 3), 12 §12
+ * Run:       java Pinning.java synchronized    and    java Pinning.java ReentrantLock
+ *            on JDK 21 and on JDK 25; on JDK 21, add -Djdk.tracePinnedThreads=short
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 444 (virtual threads); JEP 491 (synchronize virtual threads without pinning, JDK 24)
+ * Output:    timings vary; JDK 21 and JDK 25 differ by design.
+ */
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 public class Pinning {

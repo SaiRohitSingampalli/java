@@ -24,9 +24,9 @@
 
 ---
 
-## 1. What changes at staff and architect level 🟣
+## 1. What changes at staff and architect level 🔵
 
-| Dimension | Senior | Staff | Principal / Architect |
+| Dimension | Senior | Staff | Principal |
 |---|---|---|---|
 | **Scope** | A team's systems | Several teams or a whole domain | An organisation's technical direction |
 | **Time horizon** | Weeks to a quarter | 2–4 quarters | Multi-year |
@@ -43,12 +43,23 @@ Will Larson describes four common **staff archetypes**:
 
 Know which one(s) your experience matches, and tell your stories in that shape. A Solver who presents as an Architect, or the reverse, sounds unconvincing.
 
+**Where "architect" fits.** The table is an individual-contributor ladder; "architect" is a role, not the rung after staff. Some companies hire architects at staff level, some at principal level, and some have no architect title, with staff and principal engineers doing the work. The roles overlap, but the emphasis differs:
+
+| | Staff engineer emphasis | Architect emphasis |
+|---|---|---|
+| The core of the job | Delivering a difficult change across teams | Setting boundaries and direction across systems |
+| Making it stick | Adoption made practical: tools, defaults, migration support | Standards made practical: clear ownership and an exceptions process |
+| Evidence you'll be asked for | Reliability, delivery and adoption outcomes | Lifecycle cost, interoperability, and how designs evolved |
+| Where depth shows | Connecting technical depth to a concrete problem | Connecting business constraints to technical choices |
+
+Find out which emphasis the role you're interviewing for has (ask the recruiter what the last person in it shipped), and pick your stories to match. The README has [reading paths for each](README.md#-paths-by-role).
+
 > [!IMPORTANT]
 > Staff interviews don't relax the technical bar; they add a second one. You still have to code cleanly (Chapter 26) and design soundly (Chapter 24). On top of that, you have to show that your technical judgment changed outcomes beyond your own keyboard.
 
 ---
 
-## 2. The interview loop and what each round measures 🟣
+## 2. The interview loop and what each round measures 🔵
 
 | Round | What they're really measuring | Prepare with |
 |---|---|---|
@@ -63,7 +74,7 @@ Know which one(s) your experience matches, and tell your stories in that shape. 
 
 ---
 
-## 3. The project deep-dive 🟣
+## 3. The project deep-dive 🔵
 
 Often the most heavily weighted round. You present one or two projects, and an interviewer drills until they find the edge of your knowledge.
 
@@ -104,7 +115,7 @@ Likely drill-downs:         "Why not X?", "How did you test it?", "What broke in
 
 ---
 
-## 4. Behavioural rounds: STAR+L and a story bank 🟣
+## 4. Behavioural rounds: STAR+L and a story bank 🔵
 
 **STAR+L:** **S**ituation (2 sentences), **T**ask (your responsibility), **A**ction (most of the answer: what *you* did and why), **R**esult (measured), **L**earning (what you'd do differently, and what you now do by default). Aim for 2–3 minutes, then let them drill.
 
@@ -155,7 +166,7 @@ The matrix doesn't make the decision. It **makes the reasoning reviewable**. Wei
 
 ---
 
-## 6. Technical strategy and influence 🟣
+## 6. Technical strategy and influence 🔵
 
 **A strategy that's actually a strategy** follows Rumelt's "kernel": **diagnosis → guiding policy → coherent actions**. A list of goals isn't a strategy.
 
@@ -177,7 +188,7 @@ The matrix doesn't make the decision. It **makes the reasoning reviewable**. Wei
 
 ---
 
-## 7. Leading a fleet-wide Java upgrade 🟣
+## 7. Leading a fleet-wide Java upgrade 🔵
 
 *"How would you move 200 services from Java 8/11/17 to Java 25?"* is a favourite architect question because it's technical, organisational and risk-management all at once.
 
@@ -232,6 +243,9 @@ A fleet dashboard. A CI gate that blocks unsupported runtimes after the deadline
 
 **Measure success** by the percentage of the fleet on target, median upgrade effort per service, incidents caused (aim for zero severe), CVE patch latency before and after, and resource cost changes. Newer JDKs often bring cheap wins, such as compact object headers (opt-in in JDK 25, the default from JDK 27) and AOT caching.
 
+> [!TIP]
+> **Worked through:** [Chapter 37](37-case-study-fleet-jdk-upgrade.md) takes this playbook to a design review: an inventory from real tools, the flags and locale data that break rollbacks, canary gates that count requests, owners and exceptions, and an ADR.
+
 ---
 
 ## 8. Virtual threads vs reactive: a decision framework 🟣
@@ -266,7 +280,7 @@ A fleet dashboard. A CI gate that blocks unsupported runtimes after the deadline
 
 ---
 
-## 10. Failure modes that sink staff candidates 🟣
+## 10. Failure modes that sink staff candidates 🔵
 
 | Failure mode | What it sounds like | Fix |
 |---|---|---|
@@ -283,7 +297,7 @@ A fleet dashboard. A CI gate that blocks unsupported runtimes after the deadline
 
 ---
 
-## 11. Questions to ask your interviewers 🟣
+## 11. Questions to ask your interviewers 🔵
 
 Good questions are evaluated too: they show what you care about.
 - "What are the biggest technical challenges this organisation will face in the next 12–18 months?"
@@ -296,7 +310,7 @@ Good questions are evaluated too: they show what you care about.
 
 ---
 
-## 12. Your first 90 days 🟣
+## 12. Your first 90 days 🔵
 
 | Days | Focus | Concrete outputs |
 |---|---|---|
@@ -309,25 +323,25 @@ Good questions are evaluated too: they show what you care about.
 ## 13. Interview questions
 
 <details>
-<summary><b>Q1. 🟣 "Walk me through the most complex system you've designed." How do you structure it?</b></summary>
+<summary><b>Q1. 🔵 "Walk me through the most complex system you've designed." How do you structure it?</b></summary>
 
 Use the deep-dive arc: context → problem (with numbers) → constraints → options considered → decision and rationale → execution (your role) → measured results → hindsight. Draw a C4 container diagram early, name the one hard part explicitly, and pre-empt drill-downs with the alternatives you rejected. Keep the first pass to about 10 minutes, then let the interviewer steer into depth.
 </details>
 
 <details>
-<summary><b>Q2. 🟣 "Tell me about a time you disagreed with a technical decision."</b></summary>
+<summary><b>Q2. 🔵 "Tell me about a time you disagreed with a technical decision."</b></summary>
 
 Strong answers show that you (1) understood the other side's goals and constraints, (2) argued with evidence (data, a prototype, risk analysis) through the proper channel (an RFC or design review), (3) accepted the outcome, whether that meant changing your mind or disagreeing and committing, and (4) followed up on results. Avoid stories where you were simply right and others were foolish. Interviewers look for respect, rigour and the ability to move forward.
 </details>
 
 <details>
-<summary><b>Q3. 🟣 "How do you influence teams that don't report to you?"</b></summary>
+<summary><b>Q3. 🔵 "How do you influence teams that don't report to you?"</b></summary>
 
 Build credibility by delivering and by helping. Understand their incentives and constraints. Make the desired path the easiest one (paved roads, automation, starters). Bring data instead of opinions. Pre-wire decisions in one-on-ones. Write clear RFCs. Give credit generously. Escalate rarely, and with options. Illustrate it with a real story with measured adoption.
 </details>
 
 <details>
-<summary><b>Q4. 🟣 "How would you upgrade 200 services from Java 11 to Java 25?"</b></summary>
+<summary><b>Q4. 🔵 "How would you upgrade 200 services from Java 11 to Java 25?"</b></summary>
 
 Inventory first (versions, `jdeps --jdk-internals`, `jdeprscan --for-removal`, high-risk bytecode and reflection libraries). Pave the road (base images, a BOM, a nightly next-JDK CI build, OpenRewrite `UpgradeToJava25` plus the Spring Boot recipes). Decouple the risk: build on the new JDK → run on it → bump the target → adopt features. Roll out in waves (pilot → early adopters → automated bulk → long tail) with canaries comparing p99, GC, CPU and RSS. Make it stick with a dashboard, a CI gate, a support policy and automation, so the next upgrade is trivial. Measure fleet coverage, effort, incidents and CVE patch latency.
 </details>
@@ -339,13 +353,13 @@ Ask about the workload first: request/response or streaming, the downstream depe
 </details>
 
 <details>
-<summary><b>Q6. 🟣 "Tell me about a significant failure."</b></summary>
+<summary><b>Q6. 🔵 "Tell me about a significant failure."</b></summary>
 
 Pick a real failure with real consequences, not a humble-brag. Own your part plainly, describe what you did during the incident, the systemic fixes (not just "we were more careful"), and how your behaviour changed afterwards. Blameless framing about others, accountable framing about yourself. Interviewers are testing self-awareness and whether failures make you better.
 </details>
 
 <details>
-<summary><b>Q7. 🟣 "How do you balance technical debt against feature work?"</b></summary>
+<summary><b>Q7. 🔵 "How do you balance technical debt against feature work?"</b></summary>
 
 Make debt visible and quantified: tie it to incidents, lead time, cost or onboarding time. Then prioritise by the "interest" it charges, not by aesthetics. Reserve continuous capacity rather than holding occasional "debt sprints". Bundle paydown with roadmap work that touches the same code. Use ADRs to record debt taken on deliberately, with exit criteria. Talk in business terms with product partners.
 </details>
@@ -363,19 +377,19 @@ Classify reversibility. Two-way doors get decided quickly, with a measurement pl
 </details>
 
 <details>
-<summary><b>Q10. 🟣 "What would you do in your first 90 days here?"</b></summary>
+<summary><b>Q10. 🔵 "What would you do in your first 90 days here?"</b></summary>
 
 Listen (one-on-ones, postmortems, ADRs, on-call shadowing, a system map, one small shipped change). Then diagnose (a state-of-the-architecture note with evidence, validated with stakeholders, with sponsorship for 1–2 high-leverage problems). Then deliver and set direction (early wins, a strategy draft, review rhythms, measurable goals). Avoid arriving with a prescription before you understand the context.
 </details>
 
 <details>
-<summary><b>Q11. 🟣 "How do you grow senior engineers toward staff?"</b></summary>
+<summary><b>Q11. 🔵 "How do you grow senior engineers toward staff?"</b></summary>
 
 Give them scope with support: delegate real, ambiguous problems instead of tasks, and coach on framing, writing and influence (review their RFCs, pre-wire with them, let them present). Sponsor them: put their names on the work in rooms they aren't in. Give specific, timely feedback against the staff rubric. Measure success by their promotions and by the problems they now solve without you.
 </details>
 
 <details>
-<summary><b>Q12. 🟣 "Tell me about saying no to a senior stakeholder."</b></summary>
+<summary><b>Q12. 🔵 "Tell me about saying no to a senior stakeholder."</b></summary>
 
 Show that you understood the underlying goal, quantified the cost or risk of the request (with data), offered alternatives that met the real need (a smaller scope, phasing, a different approach), and reached a decision together. Escalate respectfully if needed. Close with the outcome and how the relationship stayed intact or improved. "No, but here's how we get you what you actually need" is the pattern.
 </details>

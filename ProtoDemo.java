@@ -1,3 +1,14 @@
+/*
+ * Lab:       Protocol Buffers evolution: unknown fields survive; a reused field number corrupts data
+ * Chapters:  31 (API design between services)
+ * Run:       protoc --proto_path=. --java_out=/tmp/pb order_v1.proto order_v2.proto order_v3.proto
+ *            javac -cp "$PROTOBUF_JAR" -d /tmp/pb/classes $(find /tmp/pb -name '*.java') ProtoDemo.java
+ *            java -cp "$PROTOBUF_JAR:/tmp/pb/classes" ProtoDemo
+ * Needs:     JDK 21 or newer; protoc and protobuf-java of the same version (tested: 3.21.12)
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Protocol Buffers Language Guide (proto3): updating a message type, reserved fields
+ * Output:    deterministic.
+ */
 public class ProtoDemo {
     public static void main(String[] args) throws Exception {
         byte[] v2bytes = demo.v2.OrderV2Proto.Order.newBuilder()

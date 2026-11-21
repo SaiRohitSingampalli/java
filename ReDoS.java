@@ -1,3 +1,12 @@
+/*
+ * Lab:       Catastrophic backtracking in regular expressions, timed
+ * Chapters:  03 (strings), 32 (case 8)
+ * Run:       java ReDoS.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   OWASP, Regular expression Denial of Service: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+ * Output:    timings vary by machine. The last case takes about a minute.
+ */
 import java.util.regex.Pattern;
 public class ReDoS {
     static void time(String label, String regex, String input) {

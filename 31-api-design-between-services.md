@@ -4,6 +4,15 @@
 
 > *Inside a service, a bad interface costs you a refactoring. Between services, it costs a migration across teams that don't report to you, repeated for every consumer, for years. API design is where architecture meets organisational politics. Get the mechanics right and the politics get much easier.*
 
+> [!TIP]
+> **🧭 Decision guide: the API style and the evolution rules between services**
+> - **When it matters:** for every interface another team depends on.
+> - **Default:** REST and JSON with problem details at the edge, gRPC for internal low-latency or streaming calls, events for facts; cursor pagination, ETags for concurrent updates, additive changes with tolerant readers, contract checks in CI; retries decided by the operation and the error code (§4).
+> - **Alternatives:** GraphQL where many clients need different shapes (a backend for frontend); asynchronous request-reply for long operations.
+> - **Failure modes:** database models leaking into APIs, breaking changes found by customers, offset pagination skipping rows, non-idempotent calls retried blindly.
+> - **Evidence that would change it:** client diversity, payload and latency budgets, and contract-break incidents.
+> - **Argued in:** §2, §4–§10 and §13.
+
 The demos in §5, §6, §8 and §10 were run on JDK 25, using the JDK's own HTTP server and client, Jackson 2.14, and protobuf-java 3.21 with `protoc`. The output shown is real.
 
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-31--api-design-between-services)
@@ -114,12 +123,25 @@ For server-to-server integrations, a webhook on completion avoids polling, as lo
 
 Networks fail *after* the server has done the work, so clients retry, and duplicate side effects follow unless the API is idempotent ([Chapter 23 §7](23-distributed-systems-microservices.md#7-idempotency-the-property-that-makes-retries-safe-)).
 - **Natural idempotency:** prefer `PUT /orders/{clientGeneratedId}` over `POST /orders` when clients can generate IDs (UUIDv7).
-- **Idempotency keys for `POST`:** the client sends `Idempotency-Key: <uuid>` (popularised by payment APIs, and being standardised in an IETF draft). The server stores the key with a fingerprint of the request and the response it produced:
-  - same key, same payload → replay the stored response;
-  - same key, **different** payload → reject it (422 or 409);
-  - same key, first request still in flight → 409, so the client tries again later;
-  - keys expire after a documented window (for example 24 hours).
-- **Retry rules for clients:** retry connection failures, 408, 429, 502, 503 and 504, with backoff, jitter and a budget, honouring `Retry-After`. Retry a 500 only when the operation is idempotent. **Never** retry 400/401/403/404/409/422: repeating the same mistake won't fix it. See [Chapter 22](22-production-readiness-observability-resilience.md).
+- **Idempotency keys for `POST`:** the client sends `Idempotency-Key: <uuid>` (popularised by payment APIs, and being standardised in an IETF draft). The server claims the key *before* doing the work, stores a fingerprint of the request and the response it produced, and answers a repeat according to the state it finds ([Chapter 23 §7](23-distributed-systems-microservices.md#7-idempotency-the-property-that-makes-retries-safe-)):
+  - same key, same payload, finished → replay the stored response (status and body);
+  - same key, first request still in flight → `409` with a problem `type` such as `idempotency-key-in-use` and a `Retry-After`: the client sends **the same request with the same key** again later;
+  - same key, **different** payload → `422` with a `type` such as `idempotency-key-reused`: a client bug, never retried;
+  - keys expire after a documented window (for example 24 hours) that's longer than any client keeps retrying.
+- **Decide retries by the operation and the error code, not by the status code alone.** The same `409` can mean "try again in a second" or "never send this again", so the contract must say which, with a stable problem `type` ([§7](#7-errors-rfc-9457-problem-details-)):
+
+| Response | What it means | What the client does |
+|---|---|---|
+| Connection failure, `408`, `502`, `503`, `504` | Transient; the outcome may be unknown | Resend only if the operation is idempotent or carries an idempotency key, with backoff, jitter, a retry budget and `Retry-After` |
+| `429` | Rate-limited | Wait for `Retry-After`, then resend |
+| `500` | A fault on the server; the outcome is unknown | Resend only if the operation is idempotent or keyed |
+| `409` `idempotency-key-in-use` | Your earlier request with this key is still running | Resend the **same** request with the same key after `Retry-After` |
+| `409` `version-conflict`, or `412` | The resource changed since you read it | Don't resend: re-read, decide again, then send a **new** request with the new version (`If-Match`) |
+| `409` for a business conflict (`already-exists`, an invalid state transition) | Permanent for this request | Don't retry: show it to the user or fix the input |
+| `422` `idempotency-key-reused` | The same key with a different payload | Never retry: fix the client |
+| `400`, `401`, `403`, `404`, other `422`s | The request itself is wrong | Don't resend it unchanged (a `401` may succeed once after refreshing the token) |
+
+Resilience mechanics (backoff, jitter, budgets, one retrying layer) are in [Chapter 22](22-production-readiness-observability-resilience.md).
 
 ---
 
@@ -143,6 +165,7 @@ static String encodeCursor(Order last) {                     // opaque to client
             .encodeToString((last.createdAt() + ":" + last.id()).getBytes(StandardCharsets.UTF_8));
 }
 ```
+<!-- lab-output: ApiDemos.java -->
 ```
 insert between pages | offset: page1=[10, 9, 8] page2=[8, 7, 6] | keyset: page1=[10, 9, 8] page2=[7, 6, 5] (cursor MTAwODo4)
 delete between pages | offset: page1=[10, 9, 8] page2=[6, 5, 4] | keyset: page1=[10, 9, 8] page2=[7, 6, 5] (cursor MTAwODo4)
@@ -178,6 +201,7 @@ case "PUT" -> {
     ...                                                                          // update, bump version, 204 + new ETag
 }
 ```
+<!-- lab-output: ApiDemos.java -->
 ```
 GET, no validator                            -> 200  ETag "v1"  body 66 bytes
 GET, If-None-Match: "v1"                     -> 304  ETag "v1"  body 0 bytes
@@ -225,6 +249,7 @@ new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, 
 new ObjectMapper().readValue("{\"id\":\"pay-1\",\"status\":\"REFUNDED\"}", Payment.class);
 new ObjectMapper().configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true).readValue(..., Payment.class);
 ```
+<!-- lab-output: ApiDemos.java -->
 ```
 strict reader : Unrecognized field "currency" (class ApiDemos$OrderV1), not marked as ignorable (2 known properties: "id", "totalCents"])
 tolerant reader: OrderV1[id=o-1, totalCents=1299]
@@ -307,6 +332,7 @@ byte[] forwardedByOldService = seenByOldService.toByteArray();         // an old
 ...
 demo.v1.OrderV1Proto.Order misread = demo.v1.OrderV1Proto.Order.parseFrom(v3bytes);
 ```
+<!-- lab-output: ProtoDemo.java -->
 ```
 v1 reads v2 bytes   : id=o-1 quantity=2 unknown fields kept=[4]
 v2 reads it back    : currency=EUR
@@ -406,7 +432,7 @@ class OrderGraphQlController {
 
 ---
 
-## 13. Contract-first, governance and breaking-change detection 🟣
+## 13. Contract-first, governance and breaking-change detection 🟣→🔵
 
 - **Contract-first** (write and review the OpenAPI, `.proto` or AsyncAPI first, then generate code on both sides) suits cross-team and public APIs. **Code-first** (annotations generate the spec, for example with springdoc) is fine for fast-moving internal APIs, **if** the generated spec is committed and diffed in CI.
 - **Automated gates in CI:**
@@ -449,7 +475,7 @@ class OrderGraphQlController {
 <details>
 <summary><b>Q3. 🔴 How do you make <code>POST /payments</code> safe to retry?</b></summary>
 
-Require an `Idempotency-Key` header. Store the key with a fingerprint of the request and the final response, atomically (a unique constraint). On replay with the same payload, return the stored response. With a different payload, reject. While the first request is still in flight, return 409. Expire keys after a documented window. Downstream calls (to the payment processor) get their own deterministic keys, and timeouts are treated as unknown outcomes to reconcile, never as failures to blindly retry.
+Require an `Idempotency-Key` header. Claim the key *before* doing the work (insert it with a fingerprint of the request under a unique constraint, and commit), then store the final response against it. On replay with the same payload, return the stored response. With a different payload, return 422, which the client must never retry. While the first request is still in flight, return 409 with an error type such as `idempotency-key-in-use` and `Retry-After`, which the client *should* retry with the same key. Expire keys after a documented window. Downstream calls (to the payment processor) get their own deterministic keys, and timeouts are treated as unknown outcomes to reconcile, never as failures to blindly retry.
 </details>
 
 <details>
@@ -501,7 +527,7 @@ BACKWARD (the default in common registries) means consumers on the new schema ca
 </details>
 
 <details>
-<summary><b>Q12. 🟣 How would you introduce API governance across 60 teams without slowing them down?</b></summary>
+<summary><b>Q12. 🔵 How would you introduce API governance across 60 teams without slowing them down?</b></summary>
 
 Start with a short style guide covering errors, pagination, IDs, dates, money and versioning. Ship it as code: a shared starter (problem details, pagination, tracing, idempotency) and lint rules. Automate gates in CI: style lint, breaking-change detection, and contract tests for critical consumers. Keep human review for public or high-fan-out APIs only. Publish an API catalogue with owners, and a deprecation policy backed by usage telemetry. Measure adoption and incidents caused by API changes, and iterate. Make the paved road the easiest path rather than adding approval steps.
 </details>

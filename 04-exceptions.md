@@ -201,6 +201,7 @@ try (var a = new Res("A"); var b = new Res("B")) {
     for (Throwable s : e.getSuppressed()) System.out.println("  suppressed: " + s.getMessage());
 }
 ```
+<!-- lab-output: TryWithResources.java -->
 ```
 open A
 open B

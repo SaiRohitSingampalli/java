@@ -1,3 +1,12 @@
+/*
+ * Lab:       API design between services: ETags (304, 412, 428), offset vs cursor pagination, Jackson evolution failures
+ * Chapters:  31 (API design between services)
+ * Run:       java -cp "$JACKSON_CP" ApiDemos.java
+ * Needs:     JDK 21 or newer; Jackson 2.12+ (jackson-databind, jackson-core, jackson-annotations)
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   RFC 9110 §13 (conditional requests); RFC 6585 (428 Precondition Required)
+ * Output:    deterministic. Starts a local HTTP server on a free port.
+ */
 import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

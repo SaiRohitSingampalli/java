@@ -1,3 +1,12 @@
+/*
+ * Lab:       Field and static-method hiding vs dynamic dispatch; three-phase overload resolution
+ * Chapters:  02 (OOP and the object model)
+ * Run:       java Dispatch.java    (uncomment the m(null) line to see the ambiguity error)
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JLS §8.3 (field hiding), §8.4.8 (overriding and hiding), §15.12.2 (choosing the method)
+ * Output:    deterministic.
+ */
 import java.util.*;
 
 public class Dispatch {

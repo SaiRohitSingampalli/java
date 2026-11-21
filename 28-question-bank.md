@@ -11,14 +11,14 @@
 1. **Answer out loud before you expand.** Give yourself 60 seconds per question.
 2. **Mark each one:** ✅ confident · 🟨 shaky · ❌ missed.
 3. **Re-read the linked chapter** for every 🟨 and ❌, then retry those questions **two days later** and again **a week later**. Spaced repetition is what turns recognition into recall.
-4. **Calibrate by level:**
+4. **Calibrate by target role.** The markers say what a question is for (see the [README](README.md#how-to-read-these-notes)), not which level it belongs to, so every role needs some of each:
 
 | Target role | You should be confident on |
 |---|---|
 | Mid-level | All 🟢, most 🟡 |
-| Senior | All 🟢/🟡, most 🔴 |
-| Staff | All 🔴, with structured answers to 🟣 |
-| Architect | Everything, plus the trade-off follow-ups in each chapter's own question set |
+| Senior | All 🟢 and 🟡, and the 🔴 questions in your own stack |
+| Staff | 🔴 in one or two areas you can defend through several follow-ups, structured answers to 🟣, and 🔵 answers backed by your own stories |
+| Architect | Structured answers to every 🟣 and 🔵, the 🔴 questions behind your designs, and the trade-off follow-ups in each chapter's own question set |
 
 ## Contents
 - [Part I · Language Foundations](#part-i--language-foundations) (Q1–Q35)
@@ -33,6 +33,7 @@
 - [Part X · Specialist Topics](#part-x--specialist-topics) (Q124–Q136)
 - [Part XI · Practice Lab](#part-xi--practice-lab) (Q137–Q143)
 - [Part XII · Data & AI](#part-xii--data--ai) (Q144–Q159)
+- [Part XIII · Design Reviews & Practice](#part-xiii--design-reviews--practice) (Q160–Q172)
 
 ---
 
@@ -791,13 +792,13 @@ Inject time: a `java.time.Clock` for wall-clock logic, or a `LongSupplier` for m
 </details>
 
 <details>
-<summary><b>Q121. 🟣 What are the common staff-engineer archetypes?</b></summary>
+<summary><b>Q121. 🔵 What are the common staff-engineer archetypes?</b></summary>
 
 From Will Larson: **Tech Lead** (guides a team's execution), **Architect** (owns direction across a domain), **Solver** (goes deep on the hardest problems) and **Right Hand** (extends an executive's reach). Frame your stories in the archetype that matches your experience. → [Ch 27](27-staff-architect-interview-playbook.md)
 </details>
 
 <details>
-<summary><b>Q122. 🟣 What's the kernel of a good technical strategy?</b></summary>
+<summary><b>Q122. 🔵 What's the kernel of a good technical strategy?</b></summary>
 
 Rumelt's kernel: a **diagnosis** of the situation, backed by evidence; a **guiding policy** that says how you'll approach it; and **coherent actions** that reinforce each other. A list of goals or initiatives without a diagnosis isn't a strategy. → [Ch 27](27-staff-architect-interview-playbook.md)
 </details>
@@ -925,13 +926,13 @@ Connections are held during non-database work, typically a remote call inside a 
 </details>
 
 <details>
-<summary><b>Q142. 🟣 In a debugging interview, what separates a staff answer from a senior one?</b></summary>
+<summary><b>Q142. 🔵 In a debugging interview, what separates a staff answer from a senior one?</b></summary>
 
 Both diagnose and fix the instance with evidence. The staff answer goes on to the *class* of problem: inventory where else it can happen, publish guidance, add fleet telemetry and alerts, change the paved-road default, and record the decision, all without being prompted. → [Ch 33](33-annotated-mock-interviews.md)
 </details>
 
 <details>
-<summary><b>Q143. 🟣 What makes a behavioural story "staff-shaped"?</b></summary>
+<summary><b>Q143. 🔵 What makes a behavioural story "staff-shaped"?</b></summary>
 
 Scope beyond your team, a diagnosis backed by data, visible influence mechanics (a written proposal, pre-wiring sceptics, changing the design based on feedback), adoption made easy (a mechanism, not a memo), measured results, and a learning that changed how you work. → [Ch 33](33-annotated-mock-interviews.md)
 </details>
@@ -1034,6 +1035,87 @@ Reject unknown tools (models invent them); apply policy from your own data, not 
 <summary><b>Q159. 🔴 How do you test an LLM feature?</b></summary>
 
 Plain unit tests for everything around the model (tools, parsers, guardrails, policies), with a scripted model stub for the loop. An evaluation set of real questions with expected answers and, for RAG, expected passages, scored per stage (retrieval recall, accuracy, faithfulness via an LLM judge that people spot-check), run in CI on every prompt, model or retrieval change. In production: task success, feedback, guardrail triggers and cost. → [Ch 35](35-ai-features-spring-ai-langchain4j-rag.md)
+</details>
+
+
+## Part XIII · Design Reviews & Practice
+
+<details>
+<summary><b>Q160. 🟣 Why claim a payment operation before calling the PSP, instead of saving the response afterwards?</b></summary>
+
+Because a unique constraint only protects what happens after it fires. Saved afterwards, two concurrent retries both find nothing and both charge, and a crash between the charge and the save leaves no record at all. In the lab, check-then-save charged 1,000 of 1,000 concurrent duplicate checkouts twice; claiming first charged each once, and the duplicates got a `409` and then the replayed result. → [Ch 36](36-case-study-payments.md)
+</details>
+
+<details>
+<summary><b>Q161. 🟣 A PSP call times out. What do you do, and what changes after a day?</b></summary>
+
+Record the outcome as unknown, not failed, and tell the client it's processing (`202`). Re-send with the same idempotency key, which is the operation's own ID, while the PSP still keeps it; Stripe may prune keys after 24 hours, so a reconciler re-sends within 23. After that, look the payment up by your reference instead of re-sending. Never use a new key until you know the first attempt failed. → [Ch 36](36-case-study-payments.md)
+</details>
+
+<details>
+<summary><b>Q162. 🔵 Which three questions decide whether a migration step can be rolled back?</b></summary>
+
+After the new version has written, can the old one still read what it wrote? What must flow back before the old version takes over (data, pending work, configuration)? And when does rollback become a forward repair: money moved, a one-way format change, deleted old code? Answer them per stage, and name the point of no return before you reach it. → [Ch 36 §8](36-case-study-payments.md#8-rollback-limits-), [Ch 37 §10](37-case-study-fleet-jdk-upgrade.md#10-rollback-limits-)
+</details>
+
+<details>
+<summary><b>Q163. 🔴 <code>jdeps</code> flags two libraries for <code>sun.misc.Unsafe</code>. What next?</b></summary>
+
+Find out what they do when access is refused: run their tests on the target JDK with `--sun-misc-unsafe-memory-access=deny`. In the lab both Guava 32 and protobuf-java 3.21 were flagged; under `deny` Guava fell back to pure Java, and protobuf failed in a static initialiser, so every later use of that class would fail too. Upgrade what fails, and count from the scan rather than from warnings, because the warning names only the first caller. → [Ch 37](37-case-study-fleet-jdk-upgrade.md)
+</details>
+
+<details>
+<summary><b>Q164. 🔴 Where should JDK-specific JVM flags live during a fleet upgrade?</b></summary>
+
+In the image (for example `JDK_JAVA_OPTIONS`), not the deployment manifest, so switching the image back switches them back. Flags break starts in both directions: JDK 21 refuses `-XX:+UseCompactObjectHeaders`, `-XX:AOTCache` and `--sun-misc-unsafe-memory-access`, and JDK 25 refuses `-Djava.security.manager=allow`. Lint every manifest against both JDKs in CI. → [Ch 37](37-case-study-fleet-jdk-upgrade.md)
+</details>
+
+<details>
+<summary><b>Q165. 🔴 A service runs <code>-XX:+UseZGC</code> on JDK 21. What changes on JDK 25?</b></summary>
+
+The collector algorithm. On 21 that flag alone selects the legacy single-generation ZGC; on 25 ZGC is always generational (the default from 23, the old mode removed in 24), and `-XX:±ZGenerational` is ignored with a warning. Treat the move as a GC change: production-like load in the pilot, and gates on pause p99, GC CPU share and RSS as well as latency. → [Ch 37](37-case-study-fleet-jdk-upgrade.md)
+</details>
+
+<details>
+<summary><b>Q166. 🟣 How many requests does a canary need before a p99 gate means anything?</b></summary>
+
+Thousands, not hundreds. In the simulation, a gate blocking anything 5% worse than baseline gave 19% false alarms and missed a third of 10% regressions at 1,000 canary requests; at about 20,000 both fell under 1%. A p50 gate missed 87–100% of a tail regression (2% of requests 400 ms slower). So gates count requests, and low-traffic services use synthetic load or long bakes. → [Ch 37 §8](37-case-study-fleet-jdk-upgrade.md#8-rollout-gates-with-evidence-)
+</details>
+
+<details>
+<summary><b>Q167. 🔴 One tenant's webhook endpoint hangs. Why does every tenant slow down, and what fixes it?</b></summary>
+
+Little's law: 10 events a second held for a 10-second timeout need 100 workers, more than a 64-worker pool has, so the hung calls take every worker and everyone queues behind them (healthy tenants waited 71 s at p50 in the lab). Bound what one endpoint can hold with a per-endpoint concurrency cap and serve endpoints round-robin: healthy p99 fell to 120 ms. → [Ch 38](38-case-study-webhook-delivery.md)
+</details>
+
+<details>
+<summary><b>Q168. 🟣 With per-endpoint caps in place, what do circuit breakers add, and what do they cost?</b></summary>
+
+They stop paying for an endpoint that's known to be down. Caps alone still let the dead endpoint time out 16 requests at a time: 960 timed-out attempts in a 10-minute outage in the lab, against 25 with breakers, and queued events stop spending retry attempts. The cost is noticing recovery later: the backlog cleared 60 s after recovery instead of 31. → [Ch 38](38-case-study-webhook-delivery.md)
+</details>
+
+<details>
+<summary><b>Q169. 🔴 Which webhook endpoint addresses must the sender refuse, and why isn't "loopback or private" enough?</b></summary>
+
+Allow only global unicast addresses, checked after resolving, and connect to the address you checked. In the lab a loopback-or-RFC-1918 check let through 8 of 15 bad addresses: the metadata service (169.254.169.254, also as `::ffff:169.254.169.254`), `0.0.0.0`, carrier-grade NAT, and IPv6 unique-local and link-local ranges, which Java's `isSiteLocalAddress()` doesn't cover. → [Ch 38 §6.2](38-case-study-webhook-delivery.md#62-security-what-the-receiver-checks-and-what-we-refuse)
+</details>
+
+<details>
+<summary><b>Q170. 🟣 Under overload, unbounded virtual threads did worse than a platform pool. Why?</b></summary>
+
+The bottleneck was 20 database connections. The pool's 200 threads accidentally limited the queue; virtual threads removed that limit, so answers came back after callers had given up (234 answered in time per second and 2,320 wasted queries, against 445 for the pool). A bulkhead of 20 plus deadline checks answered 671 per second, the database's capacity, with a p99 of 81 ms. → [Ch 39 §3](39-staff-artefact-exercises.md#3-worked-through-virtual-threads-for-a-catalogue-service-)
+</details>
+
+<details>
+<summary><b>Q171. 🔵 What makes a decision record defensible in an interview?</b></summary>
+
+The problem with numbers, the constraint that decided it, real options including doing nothing, the cost you accepted, an experiment that could have proved you wrong, acceptance criteria written before it ran, a delivery plan with owners and rollback limits, and the evidence that would reopen it. Then a follow-up saying whether it worked. → [Ch 39](39-staff-artefact-exercises.md)
+</details>
+
+<details>
+<summary><b>Q172. 🟣 A build-versus-buy comparison comes out 2% apart over three years. What now?</b></summary>
+
+Say it's a wash, then find what decides it. A sensitivity table shows which assumptions flip the answer (in the worked example, the vendor's price and volume growth, with a break-even near $15 per million deliveries at 40% growth), so get a real quote and agree the growth figure. Look at the yearly shape, not just the total, and let constraints such as data residency decide when cost doesn't. → [Ch 39 §7](39-staff-artefact-exercises.md#7-exercise-4-a-cost-comparison-that-counts-people-)
 </details>
 
 ---

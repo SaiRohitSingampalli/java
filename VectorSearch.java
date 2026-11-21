@@ -1,3 +1,12 @@
+/*
+ * Lab:       Vector search measured: exact vs HNSW, quantisation with re-scoring, filtered search
+ * Chapters:  35 (AI features)
+ * Run:       java -Xmx2g VectorSearch.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Malkov and Yashunin, Efficient and robust approximate nearest neighbor search using HNSW graphs (2018)
+ * Output:    recall figures are deterministic (fixed seeds); latencies vary. Takes about 20 seconds.
+ */
 import java.util.*;
 
 /**

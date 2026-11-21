@@ -1,3 +1,12 @@
+/*
+ * Lab:       Streams process one element at a time through the pipeline, and short-circuit
+ * Chapters:  07 (lambdas and streams)
+ * Run:       java VerticalStream.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   java.util.stream package summary (laziness, short-circuiting)
+ * Output:    deterministic.
+ */
 import java.util.*;
 import java.util.stream.*;
 

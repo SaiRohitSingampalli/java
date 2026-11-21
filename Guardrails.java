@@ -1,3 +1,12 @@
+/*
+ * Lab:       Guardrails around a model's output: parse, repair and validate; a prompt-injection blocklist and how it fails; PII redaction
+ * Chapters:  35 (AI features)
+ * Run:       java -cp "$JACKSON_CP" Guardrails.java
+ * Needs:     JDK 21 or newer; Jackson 2.12+ (jackson-databind, jackson-core, jackson-annotations)
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   OWASP Top 10 for LLM Applications (LLM01: prompt injection)
+ * Output:    deterministic.
+ */
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.*;

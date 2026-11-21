@@ -4,6 +4,15 @@
 
 > *Patterns are vocabulary, not goals. Saying "it's a decorator" saves ten minutes of explanation in a design review. Forcing a decorator where a lambda would do costs ten hours of maintenance. Modern Java has made several classic patterns nearly invisible, and knowing which ones is part of the answer.*
 
+> [!TIP]
+> **🧭 Decision guide: whether to introduce a pattern**
+> - **When it matters:** when code has a real axis of change, or when you need to explain a structure in one sentence of a design document.
+> - **Default:** start with the simplest code and refactor towards a pattern when change pressure shows up; reach for modern Java (records, sealed types, lambdas, pattern matching) before class hierarchies.
+> - **Alternatives:** architecture-level patterns (outbox, circuit breaker, strangler fig, CQRS), which have organisation-wide blast radius and deserve an ADR.
+> - **Failure modes:** indirection with no axis of change, singletons hiding global state, decorators and proxies that confuse identity.
+> - **Evidence that would change it:** the third change that touches the same conditional, or tests you can't write without a seam.
+> - **Argued in:** §1 and §7–§8.
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-17--design-patterns)
 
 ---

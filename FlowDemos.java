@@ -1,3 +1,12 @@
+/*
+ * Lab:       The Reactive Streams protocol traced with java.util.concurrent.Flow: backpressure, hot vs cold, a blocked event loop
+ * Chapters:  29 (reactive Java)
+ * Run:       java FlowDemos.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Reactive Streams specification: https://www.reactive-streams.org/; java.util.concurrent.Flow and SubmissionPublisher API docs
+ * Output:    deterministic, except counts that depend on timing (how many items offer() drops).
+ */
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.Flow.*;

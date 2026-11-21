@@ -1,3 +1,12 @@
+/*
+ * Lab:       The 15 coding-interview pattern templates, each with tests
+ * Chapters:  26 (coding and LLD)
+ * Run:       java Patterns.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   none: classic problems
+ * Output:    deterministic. Self-checking: prints ALL PASS, or exits with status 1 if a test fails.
+ */
 import java.util.*;
 
 public class Patterns {
@@ -329,5 +338,6 @@ public class Patterns {
         a.next = b; b.next = c; c.next = d; d.next = b;
         check("cycleStart", cycleStart(a) == b, true);
         System.out.println(fails == 0 ? "ALL PASS" : fails + " FAILURES");
+        if (fails > 0) System.exit(1);
     }
 }

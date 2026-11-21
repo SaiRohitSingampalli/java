@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """Chapter 30 startup benchmark: default CDS vs AppCDS (JDK 21) vs AOT cache (JDK 25).
 
+Lab:       Startup time and memory of StartupApp.java under six JVM configurations, from CDS off to the AOT cache
+Chapters:  30 (startup and footprint) §3 and §4
+Run:       JDK21=<jdk 21 home> JDK25=<jdk 25 home> JACKSON_CP=<jars> python3 startup-bench.py
+Needs:     Python 3.8+, a JDK 21 and a JDK 25, Jackson 2.12+; Linux (it reads peak RSS in kilobytes, Linux's unit)
+Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-18 (./verify-labs.sh --with-bench)
+Sources:   JEP 341 (default CDS archives), JEP 350 (dynamic CDS), JEP 483, 514 and 515 (the AOT cache)
+Output:    a table of wall-clock time, time to main and RSS (medians); timings vary by machine and load, so
+           compare the configurations, not the absolute numbers. Leaves a build/ folder next to the script.
+
 Environment variables (defaults are Ubuntu package paths):
   JDK21       home of a JDK 21   (default /usr/lib/jvm/java-21-openjdk-amd64)
   JDK25       home of a JDK 25   (default /usr/lib/jvm/java-25-openjdk-amd64)

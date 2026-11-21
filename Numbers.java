@@ -1,3 +1,12 @@
+/*
+ * Lab:       Numeric traps: lossy widening, overflow, Math.abs(MIN_VALUE), shift masking, 0.1 + 0.2, NaN
+ * Chapters:  01 (platform fundamentals)
+ * Run:       java Numbers.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JLS §4.2.2 (integer operations), §5.1.2 (widening), §15.19 (shifts); IEEE 754
+ * Output:    deterministic.
+ */
 public class Numbers {
     public static void main(String[] args) {
         int big = 123_456_789;

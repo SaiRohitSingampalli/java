@@ -1,3 +1,12 @@
+/*
+ * Lab:       Bytes per object with and without compact object headers
+ * Chapters:  30 (startup and footprint)
+ * Run:       java -Xmx2g -XX:-UseCompactObjectHeaders Footprint.java, then the same with -XX:+UseCompactObjectHeaders
+ * Needs:     JDK 25 or newer (the flag is a product option from JDK 25)
+ * Verified:  JDK 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   JEP 519 (compact object headers): https://openjdk.org/jeps/519
+ * Output:    bytes per object are stable to about 0.1; total heap varies slightly.
+ */
 import java.lang.management.ManagementFactory;
 public class Footprint {
     record Point(int x, int y) {}

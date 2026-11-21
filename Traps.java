@@ -1,3 +1,12 @@
+/*
+ * Lab:       Java traps in coding rounds: comparator overflow, the Integer cache, recursion depth and more
+ * Chapters:  26 (coding and LLD)
+ * Run:       java Traps.java
+ * Needs:     JDK 21 or newer, nothing else
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Integer.valueOf and Comparator API docs
+ * Output:    deterministic, except the recursion depth reached, which varies from run to run.
+ */
 import java.util.*;
 
 public class Traps {

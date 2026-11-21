@@ -4,6 +4,15 @@
 
 > *Spring is the most widely used Java framework in the world and also the most misunderstood one. Nearly every "Spring bug" an interviewer asks about comes down to three mechanisms: the bean lifecycle, proxies, and thread-bound context. This chapter covers all three in depth.*
 
+> [!TIP]
+> **🧭 Decision guide: how much to rely on Spring's proxies and thread-bound context**
+> - **When it matters:** for transactions, security, caching, `@Async`, and anything else Spring implements with a proxy or a thread-local.
+> - **Default:** annotations at the edges (web, persistence, `@Transactional` on application services), plain Java in the domain, typed and validated `@ConfigurationProperties`, Open Session in View off, and internal starters for cross-cutting defaults.
+> - **Alternatives:** programmatic transactions (`TransactionTemplate`) where boundaries must be explicit; Spring AOT and native images for startup-sensitive apps.
+> - **Failure modes:** self-invocation that skips the proxy, private or final methods that aren't advised, context that doesn't follow work onto other threads, Open Session in View holding a connection for the whole request.
+> - **Evidence that would change it:** incidents traced to proxy semantics, or a startup budget the default runtime can't meet.
+> - **Argued in:** §7–§8, §10 and §16–§17.
+
 ---
 
 ## Table of contents

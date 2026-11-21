@@ -4,6 +4,15 @@
 
 > *You can write Java for years without knowing how the JVM works. You can't debug a production performance problem, explain a deoptimization storm after a deploy, or make a credible startup-time decision without it. This chapter is where staff interviews separate people.*
 
+> [!TIP]
+> **🧭 Decision guide: whether to tune the JIT and warm-up**
+> - **When it matters:** when the first minutes after a deploy, CPU limits under two cores, or a few very hot loops decide latency or cost.
+> - **Default**, assuming a current LTS and a typical service: leave the JIT flags alone. Keep hot paths simple and monomorphic, give pods enough CPU to compile during warm-up (or set `-XX:ActiveProcessorCount`), ramp traffic after deploys, and use the AOT cache for startup ([Chapter 30](30-startup-footprint-aot-native-image.md)).
+> - **Alternatives:** targeted flags for a measured problem (code-cache size, compiler threads), Graal's JIT, or a native image when startup dominates.
+> - **Failure modes:** minutes of slow warm-up in one-CPU pods; deoptimisation storms after a deploy (CPU rises while traffic is flat); megamorphic call sites in hot loops; methods over 8,000 bytes of bytecode that never get compiled.
+> - **Evidence that would change it:** JFR compilation and deoptimisation events, or a profile that shows JIT activity rather than your code as the cost after warm-up.
+> - **Argued in:** §8–§12 and §15.
+
 🧪 **Runnable labs:** [the programs behind this chapter's outputs](labs.md#chapter-09--jvm-internals)
 
 ---
@@ -178,6 +187,7 @@ The JVM is a **stack machine**: instructions pop operands from the operand stack
 ```java
 static int max(int a, int b) { return a > b ? a : b; }
 ```
+<!-- lab-output: Bytecode.java, JDK 21 -->
 ```
   static int max(int, int);
     Code:
@@ -193,6 +203,7 @@ static int max(int a, int b) { return a > b ? a : b; }
 ```java
 int sumAll(int[] xs) { int s = 0; for (int x : xs) s += x; return s; }
 ```
+<!-- lab-output: Bytecode.java, JDK 21 -->
 ```
   int sumAll(int[]);
     Code:

@@ -4,6 +4,15 @@
 
 > *Tests are the only documentation that fails when it goes out of date. At staff level, the question isn't "do you write tests?" but "what's your test strategy, what does it cost, and how much confidence does it buy per minute of CI?"*
 
+> [!TIP]
+> **🧭 Decision guide: the mix of tests for a service and a platform**
+> - **When it matters:** always, and urgently when CI gets slow or flaky, or teams start deploying independently.
+> - **Default:** many fast unit tests of domain logic, integration tests against real dependencies with Testcontainers, contract tests between services, a few end-to-end journeys; PR builds under ten minutes; flaky tests quarantined with an owner and a deadline.
+> - **Alternatives:** more integration than unit tests (the "trophy") for thin CRUD services; mutation testing on critical modules; property-based tests for parsers and calculations.
+> - **Failure modes:** H2 standing in for PostgreSQL, a shared end-to-end environment as the main safety net, `Thread.sleep` in tests, coverage targets that get gamed.
+> - **Evidence that would change it:** escaped defects by layer, change-failure rate, CI duration and flaky-test rate.
+> - **Argued in:** §1, §5–§7, §12 and §14.
+
 ---
 
 ## Table of contents

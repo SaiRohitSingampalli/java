@@ -1,3 +1,12 @@
+/*
+ * Lab:       Redis experiments: pipelining, KEYS vs SCAN, DEL vs UNLINK, lost updates, eviction, lock leases, streams
+ * Chapters:  34 (data stores)
+ * Run:       redis-server --port 6380 --save '' --appendonly no --daemonize yes, then java RedisLabs.java all localhost 6380
+ * Needs:     JDK 21 or newer; a throwaway Redis 7+ or Valkey server (tested: Redis 7.0.15). No client library
+ * Verified:  JDK 21.0.12 and 25.0.5 on Linux x86-64, 2026-11-20
+ * Sources:   Redis documentation: pipelining, SCAN, UNLINK, eviction policies, distributed locks, streams
+ * Output:    timings vary. Exits with status 1 if the server is unreachable or already holds data.
+ */
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;

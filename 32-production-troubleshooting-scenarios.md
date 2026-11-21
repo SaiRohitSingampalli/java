@@ -112,7 +112,7 @@ requests done after 1 s: [false, false, false, false]
 	at java.util.concurrent.locks.LockSupport.park(java.base@25.0.5.0.3/LockSupport.java:223)
 	at java.util.concurrent.FutureTask.awaitDone(java.base@25.0.5.0.3/FutureTask.java:511)
 	at java.util.concurrent.FutureTask.get(java.base@25.0.5.0.3/FutureTask.java:192)
-	at PoolDeadlock.lambda$main$1(PoolDeadlock.java:14)
+	at PoolDeadlock.lambda$main$1(PoolDeadlock.java:23)
 ```
 All four pool threads are parents waiting on children, and the children sit in the queue behind them. That's a **thread-starvation deadlock**. The JVM's deadlock detector only finds cycles of *monitors and locks*, so it reports nothing. The diagnostic signature is **every thread in a pool `WAITING` in `Future.get` / `join` with the work queue non-empty**.
 
@@ -137,7 +137,7 @@ On JDK 21, blocking inside `synchronized` **pins** the virtual thread to its car
 ```
 $ java -Djdk.tracePinnedThreads=short ...
 VirtualThread[#20]/runnable@ForkJoinPool-1-worker-2 reason:MONITOR
-    Pinning.lambda$main$0(Pinning.java:14) <== monitors:1
+    Pinning.lambda$main$0(Pinning.java:24) <== monitors:1
 ```
 **Fix:** upgrade to JDK 24+ (the real fix), or replace `synchronized` around blocking calls with `ReentrantLock`, or upgrade the offending library. Use the JFR `jdk.VirtualThreadPinned` event in production. Pinning through native frames (JNI) still exists on new JDKs. **Prevent:** load-test the switch to virtual threads with realistic dependencies, and watch carrier utilisation as well as request concurrency ([Chapter 12](12-concurrency-advanced-juc-loom.md)).
 
@@ -394,7 +394,7 @@ Processing a poll batch now takes longer than `max.poll.interval.ms`, so the con
 </details>
 
 <details>
-<summary><b>Q10. 🟣 How do you run a postmortem so the fixes actually stick?</b></summary>
+<summary><b>Q10. 🔵 How do you run a postmortem so the fixes actually stick?</b></summary>
 
 Keep it blameless and evidence-based: a timeline from detection to recovery, the root cause *and* the contributing factors (why it wasn't caught earlier, why recovery took so long). Turn those into a small number of owned, dated action items, prioritising systemic ones: an alert that would have fired, a test that would have caught it, a guardrail or default that prevents the class of problem fleet-wide. Track the action items to completion in the normal planning process, share the learning beyond the team, and check later that the alert or guardrail actually works (for example, with a game day).
 </details>
